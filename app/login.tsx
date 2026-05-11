@@ -16,27 +16,18 @@ export default function LoginScreen() {
   const { login } = useAuth();
 
   const validarLogin = () => {
-    const emailAdm = 'admin@eduvale.com.br';
-    const senhaAdm = '654321';
-    const emailUser = 'aluno@eduvale.com.br';
-    const senhaUser = '123456';
+    const emailFunc = 'funcionario@email.com';
+    const senhaFunc = '123456';
 
     if (usuario === '' || senha === '') {
       Alert.alert('Erro', 'Preencha usuário e senha');
       return;
     }
 
-    if (usuario === emailAdm && senha === senhaAdm) {
-      login(usuario, 'admin');
-      Alert.alert('Sucesso', 'Login de administrador');
-      router.replace('/(tabs)');
-      return;
-    }
-
-    if (usuario === emailUser && senha === senhaUser) {
-      login(usuario, 'user');
-      Alert.alert('Sucesso', 'Login de usuário');
-      router.replace('/(tabs)');
+    if (usuario === emailFunc && senha === senhaFunc) {
+      login(usuario, 'admin'); // Mantendo a role original se necessária no contexto
+      Alert.alert('Sucesso', 'Login efetuado com sucesso');
+      router.replace('/(tabs)/CadastroVisita');
       return;
     }
 

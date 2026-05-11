@@ -21,7 +21,7 @@ export default function BottomNavBar({ email = '', userType }: BottomNavBarProps
     };
     
     const goToAdminPage = () => {
-        router.replace('/(tabs)/admPage');
+        router.replace('/(tabs)/CadastroVisita');
     };
     
     const goToLogin = () => {
@@ -46,11 +46,11 @@ export default function BottomNavBar({ email = '', userType }: BottomNavBarProps
       <Pressable
         style={[
           styles.navButton,
-          pathname === '/(tabs)/admPage' && styles.activeButton,
-          { borderTopColor: pathname === '/(tabs)/admPage' ? tintColor : 'transparent' },
+          pathname === '/(tabs)/CadastroVisita' && styles.activeButton,
+          { borderTopColor: pathname === '/(tabs)/CadastroVisita' ? tintColor : 'transparent' },
         ]}
         onPress={goToAdminPage}>
-        <ThemedText style={[styles.navText, pathname === '/(tabs)/admPage' && { color: tintColor }]}>Admin</ThemedText>
+        <ThemedText style={[styles.navText, pathname === '/(tabs)/CadastroVisita' && { color: tintColor }]}>Admin</ThemedText>
       </Pressable>
 
     </View>

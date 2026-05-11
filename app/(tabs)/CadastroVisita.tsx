@@ -1,5 +1,4 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import {
@@ -8,6 +7,7 @@ import {
   FlatList,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import MapView from 'react-native-maps';
 
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
@@ -24,23 +25,24 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Fonts } from '@/constants/theme';
 import { useAuth } from '../../context/auth-context';
 
-interface Produto {
+interface Visita {
   id: string;
-  nome: string;
-  preco: string;
-  desc: string;
+  nomeLocal: string;
+  nomeFuncionario: string;
+  observacao: string;
   imagem: string | null;
 }
 
-const STORAGE_KEY = '@produtos';
+const STORAGE_KEY = '@visitas';
 
-export default function AdminPage() {
+export default function CadastroVisitaScreen() {
   const { email } = useAuth();
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [nome, setNome] = useState('');
-  const [preco, setPreco] = useState('');
-  const [desc, setDesc] = useState('');
+  const [visitas, setVisitas] = useState<Visita[]>([]);
+  const [nomeLocal, setNomeLocal] = useState('');
+  const [nomeFuncionario, setNomeFuncionario] = useState('');
+  const [observacao, setObservacao] = useState('');
   const [imagem, setImagem] = useState<string | null>(null);
+  const [mapaVisivel, setMapaVisivel] = useState(false);
 
   const [permission, requestPermission] = useCameraPermissions();
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -52,34 +54,19 @@ export default function AdminPage() {
         try {
           const dados = await AsyncStorage.getItem(STORAGE_KEY);
           if (dados) {
-            setProdutos(JSON.parse(dados));
+            setVisitas(JSON.parse(dados));
           } else {
-            setProdutos([]);
+            setVisitas([]);
           }
         } catch {
-          Alert.alert('Erro', 'Falha ao carregar produtos');
+          Alert.alert('Erro', 'Falha ao carregar visitas');
         }
       }
       carregar();
     }, [])
   );
 
-  async function escolherImagem() {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permissão necessária', 'Permita acesso à galeria.');
-      return;
-    }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.7,
-    });
-
-    if (!result.canceled) {
-      setImagem(result.assets[0].uri);
-    }
-  }
 
   async function abrirCamera() {
     if (!permission) {
@@ -104,63 +91,62 @@ export default function AdminPage() {
     }
   }
 
-  async function adicionarProduto() {
-    if (!nome || !preco || !desc) {
-      Alert.alert('Erro', 'Preencha todos os campos');
+  async function adicionarVisita() {
+    if (!nomeLocal) {
+      Alert.alert('Erro', 'Preencha o nome do local');
       return;
     }
 
-    const novoProduto: Produto = {
+    const novaVisita: Visita = {
       id: Date.now().toString(),
-      nome,
-      preco,
-      desc,
+      nomeLocal,
+      nomeFuncionario,
+      observacao,
       imagem,
     };
 
     try {
       const dados = await AsyncStorage.getItem(STORAGE_KEY);
-      const listaAtual: Produto[] = dados ? JSON.parse(dados) : [];
+      const listaAtual: Visita[] = dados ? JSON.parse(dados) : [];
 
-      const novaLista = [...listaAtual, novoProduto];
+      const novaLista = [...listaAtual, novaVisita];
 
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(novaLista));
 
-      setProdutos(novaLista);
+      setVisitas(novaLista);
 
       try {
         const response = await fetch(
-          "http://192.168.1.138:8080/app_teste/salvar_produto.php",
+          "http://192.168.1.138:8080/app_teste/salvar_visita.php",
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json"
             },
-            body: JSON.stringify(novoProduto)
+            body: JSON.stringify(novaVisita)
           }
         );
         if (!response.ok) {
-          console.log("Erro na API ao salvar produto:", response.status);
+          console.log("Erro na API ao salvar visita:", response.status);
         }
       } catch (apiError) {
-        console.log("Erro de rede ao salvar produto na API:", apiError);
+        console.log("Erro de rede ao salvar visita na API:", apiError);
       }
 
-      setNome('');
-      setPreco('');
-      setDesc('');
+      setNomeLocal('');
+      setObservacao('');
       setImagem(null);
 
-      Alert.alert('Sucesso', 'Produto criado!');
+      Alert.alert('Sucesso', 'Visita cadastrada!');
     } catch {
-      Alert.alert('Erro', 'Falha ao salvar produto');
+      Alert.alert('Erro', 'Falha ao salvar visita');
     }
   }
 
-  async function removerProduto(id: string) {
-    const novaLista = produtos.filter((item) => item.id !== id);
+  async function removerVisita(id: string) {
+    const novaLista = visitas.filter((item) => item.id !== id);
 
-    setProdutos(novaLista);
+    setVisitas(novaLista);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(novaLista));
   }
 
@@ -199,41 +185,40 @@ export default function AdminPage() {
       >
         <ThemedView style={styles.formContainer}>
           <ThemedText style={styles.formTitle}>
-            Adicionar Produto
+            Cadastrar Visita
           </ThemedText>
 
           <TextInput
             style={styles.input}
-            placeholder="Nome"
-            value={nome}
-            onChangeText={setNome}
+            placeholder="Nome do local"
+            value={nomeLocal}
+            onChangeText={setNomeLocal}
           />
 
           <TextInput
             style={styles.input}
-            placeholder="Preço"
-            value={preco}
-            keyboardType="numeric"
-            onChangeText={setPreco}
+            placeholder="Quem realizou a visita?"
+            value={nomeFuncionario}
+            onChangeText={setNomeFuncionario}
           />
 
           <TextInput
             style={styles.input}
-            placeholder="Descrição"
-            value={desc}
-            onChangeText={setDesc}
+            placeholder="Observação (opcional)"
+            value={observacao}
+            onChangeText={setObservacao}
           />
 
           <View style={styles.rowButtons}>
-            <Pressable style={[styles.imageButton, { flex: 1, marginRight: 5 }]} onPress={escolherImagem}>
+            <Pressable style={[styles.imageButton, { flex: 1, marginRight: 5 }]} onPress={abrirCamera}>
               <ThemedText style={styles.imageButtonText}>
-                Escolher Imagem
+                Tirar Foto
               </ThemedText>
             </Pressable>
 
-            <Pressable style={[styles.imageButton, { flex: 1, marginLeft: 5 }]} onPress={abrirCamera}>
+            <Pressable style={[styles.imageButton, { flex: 1, marginLeft: 5, backgroundColor: '#4CAF50' }]} onPress={() => setMapaVisivel(true)}>
               <ThemedText style={styles.imageButtonText}>
-                Tirar Foto
+                Ver Mapa
               </ThemedText>
             </Pressable>
           </View>
@@ -242,21 +227,21 @@ export default function AdminPage() {
             <Image source={{ uri: imagem }} style={styles.previewImage} />
           )}
 
-          <Button title="Adicionar Produto" onPress={adicionarProduto} />
+          <Button title="Cadastrar Visita" onPress={adicionarVisita} />
         </ThemedView>
       </KeyboardAvoidingView>
 
-      {produtos.length > 0 && (
-        <ThemedView style={styles.produtosContainer}>
-          <ThemedText style={styles.produtosTitle}>
-            Produtos Criados
+      {visitas.length > 0 && (
+        <ThemedView style={styles.visitasContainer}>
+          <ThemedText style={styles.visitasTitle}>
+            Visitas Cadastradas
           </ThemedText>
 
           <FlatList
-            data={produtos}
+            data={visitas}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <ThemedView style={styles.produtoCard}>
+              <ThemedView style={styles.visitaCard}>
                 {item.imagem && (
                   <Image
                     source={{ uri: item.imagem }}
@@ -264,14 +249,17 @@ export default function AdminPage() {
                   />
                 )}
 
-                <ThemedText style={styles.produtoNome}>
-                  {item.nome}
+                <ThemedText style={styles.textCard}>
+                  Local: {item.nomeLocal}
                 </ThemedText>
 
-                <ThemedText>R$ {item.preco}</ThemedText>
-                <ThemedText>Descrição: {item.desc}</ThemedText>
+                <ThemedText style={styles.textCard}>
+                  Funcionário responsável: {item.nomeFuncionario}
+                </ThemedText>
 
-                <Pressable onPress={() => removerProduto(item.id)}>
+                <ThemedText style={styles.textCard}>Observação: {item.observacao ? item.observacao : 'Nenhuma'}</ThemedText>
+
+                <Pressable onPress={() => removerVisita(item.id)}>
                   <ThemedText style={{ color: 'red', marginTop: 6 }}>
                     Excluir
                   </ThemedText>
@@ -281,6 +269,23 @@ export default function AdminPage() {
           />
         </ThemedView>
       )}
+
+      <Modal visible={mapaVisivel} animationType="slide" transparent={false}>
+        <View style={{ flex: 1 }}>
+          <MapView
+            style={{ flex: 1 }}
+            initialRegion={{
+              latitude: -23.55052, // Coordenada de exemplo, SP
+              longitude: -46.633308,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            }}
+          />
+          <View style={styles.mapCloseButton}>
+            <Button title="Fechar Mapa" onPress={() => setMapaVisivel(false)} />
+          </View>
+        </View>
+      </Modal>
 
       <View style={{ height: 80 }} />
     </ParallaxScrollView>
@@ -331,16 +336,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
   },
-  produtosContainer: {
+  visitasContainer: {
     padding: 16,
   },
-  produtosTitle: {
+  visitasTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 10,
     fontFamily: Fonts.rounded,
   },
-  produtoCard: {
+  visitaCard: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
@@ -353,7 +358,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginBottom: 8,
   },
-  produtoNome: {
+  textCard: {
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
@@ -376,5 +381,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingHorizontal: 20,
+  },
+  mapCloseButton: {
+    position: 'absolute',
+    bottom: 30,
+    alignSelf: 'center',
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 5,
   },
 });

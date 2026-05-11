@@ -9,48 +9,39 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
 
-type Produto = {
+type Visita = {
   id: string;
-  nome: string;
-  preco: string;
-  desc: string;
-  imagem: any;
+  nomeLocal: string;
+  nomeFuncionario: string;
+  observacao: string;
+  imagem: string | null;
 };
 
-const PRODUTOS_PADRAO: Produto[] = [
-  { id: 'p1', nome: 'Camisa Básica', preco: '59.90', desc: 'Camisa 100% algodão', imagem: require('@/assets/images/camisa.png') },
-  { id: 'p2', nome: 'Calça Jeans', preco: '129.90', desc: 'Calça premium', imagem: require('@/assets/images/calca.png') },
-  { id: 'p3', nome: 'Tênis Esportivo', preco: '199.90', desc: 'Para caminhada e corrida', imagem: require('@/assets/images/tenis.png') },
-  { id: 'p4', nome: 'Boné Classic', preco: '49.90', desc: 'Aba curva ajustável', imagem: require('@/assets/images/bone.png') },
-  { id: 'p5', nome: 'Moletom Confort', preco: '149.90', desc: 'Moletom de inverno', imagem: require('@/assets/images/moletom.png') },
-];
-
-const STORAGE_KEY = '@produtos';
+const STORAGE_KEY = '@visitas';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { email, userType } = useAuth();
 
-  const [produtos, setProdutos] = useState<Produto[]>(PRODUTOS_PADRAO);
+  const [visitas, setVisitas] = useState<Visita[]>([]);
 
   useFocusEffect(
     useCallback(() => {
-      async function carregarProdutos() {
+      async function carregarVisitas() {
         try {
           const dados = await AsyncStorage.getItem(STORAGE_KEY);
           if (dados) {
-            const adminProds = JSON.parse(dados);
-            setProdutos([...PRODUTOS_PADRAO, ...adminProds]);
+            setVisitas(JSON.parse(dados));
           } else {
-            setProdutos(PRODUTOS_PADRAO);
+            setVisitas([]);
           }
         } catch {
-          console.log('Erro ao carregar produtos');
-          setProdutos(PRODUTOS_PADRAO);
+          console.log('Erro ao carregar visitas');
+          setVisitas([]);
         }
       }
 
-      carregarProdutos();
+      carregarVisitas();
     }, [])
   );
 
@@ -75,49 +66,37 @@ export default function HomeScreen() {
         </View>
       }
     >
-      {userType === 'user' && (
-        <ThemedView style={styles.greetingContainer}>
-          <ThemedText style={styles.greetingText}>
-            Olá {email}
-          </ThemedText>
-        </ThemedView>
-      )}
-
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title" style={{ fontFamily: Fonts.rounded }}>
-          Produtos da Loja
+        <ThemedText type="title" style={{ fontFamily: Fonts.rounded, fontSize: 20 }}>
+          Visitas cadastradas
         </ThemedText>
       </ThemedView>
 
       <FlatList
-        data={produtos}
+        data={visitas}
         keyExtractor={(item) => item.id}
         scrollEnabled={false}
         renderItem={({ item }) => (
-          <ThemedView style={styles.card}>
-            <Image
-              source={
-                typeof item.imagem === 'string'
-                  ? { uri: item.imagem }
-                  : item.imagem || require('@/assets/images/camisa.png')
-              }
-              style={styles.imagem}
-              resizeMode="cover"
-            />
+          <ThemedView style={styles.visitaCard}>
+            {item.imagem && (
+              <Image
+                source={{ uri: item.imagem }}
+                style={styles.imagem}
+                resizeMode="cover"
+              />
+            )}
 
-            <ThemedText style={styles.nome}>
-              {item.nome}
+            <ThemedText style={styles.textCard}>
+              Local: {item.nomeLocal}
             </ThemedText>
 
-            <View style={styles.infoRow}>
-              <ThemedText style={styles.preco}>
-                R$ {item.preco}
-              </ThemedText>
+            <ThemedText style={styles.textCard}>
+              Funcionário responsável: {item.nomeFuncionario}
+            </ThemedText>
 
-              <ThemedText style={styles.estoque}>
-                {item.desc}
-              </ThemedText>
-            </View>
+            <ThemedText style={styles.textCard}>
+              Observação: {item.observacao ? item.observacao : 'Nenhuma'}
+            </ThemedText>
           </ThemedView>
         )}
       />
@@ -168,13 +147,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
-  card: {
+  visitaCard: {
     padding: 15,
     marginBottom: 15,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#ddd',
-    backgroundColor: '#1e1e1e',
   },
 
   imagem: {
@@ -184,24 +162,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  nome: {
+  textCard: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 4,
     fontFamily: Fonts.rounded,
-  },
-
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-
-  preco: {
-    color: '#27ae60',
-    fontWeight: '600',
-  },
-
-  estoque: {
-    opacity: 0.7,
   },
 });

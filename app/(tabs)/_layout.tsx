@@ -24,9 +24,9 @@ export default function TabsLayout() {
 
       {userType === 'admin' && (
         <Tabs.Screen
-          name="admPage"
+          name="CadastroVisita"
           options={{
-            title: 'Admin',
+            title: 'Cadastro de Visita',
             tabBarIcon: ({ color }) => (
               <IconSymbol name="gearshape.fill" size={26} color={color} />
             ),
