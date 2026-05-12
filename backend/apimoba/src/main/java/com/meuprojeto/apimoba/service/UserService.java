@@ -1,11 +1,9 @@
 package com.meuprojeto.apimoba.service;
 
+import com.meuprojeto.apimoba.entity.User;
 import com.meuprojeto.apimoba.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import com.meuprojeto.apimoba.entity.User;
 
 @Service
 public class UserService {
@@ -14,11 +12,25 @@ public class UserService {
     private UserRepository repository;
 
     public User create(User user) {
-
-        if(user.getEmail() == null) {
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
             throw new RuntimeException("Email obrigatório");
         }
 
+        if (repository.findByEmail(user.getEmail()).isPresent()) {
+            throw new RuntimeException("E-mail já cadastrado");
+        }
+
         return repository.save(user);
+    }
+
+    public User login(User user) {
+        User encontrado = repository.findByEmail(user.getEmail())
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        if (!encontrado.getSenha().equals(user.getSenha())) {
+            throw new RuntimeException("Senha incorreta");
+        }
+
+        return encontrado;
     }
 }
