@@ -1,5 +1,5 @@
 import ParallaxScrollView from "@/components/parallax-scroll-view";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import api from "@/service/api";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -14,73 +14,34 @@ import {
 } from "react-native";
 
 export default function CadastroUsuarioScreen() {
-  const [nome, setNome] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
 
   const router = useRouter();
-  const STORAGE_KEY = "@meu_app_usuarios";
 
   const realizarCadastro = async () => {
-    if (!nome.trim() || !email.trim()) {
+    if (!name.trim() || !email.trim() || !senha.trim()) {
       Alert.alert("Erro", "Preencha todos os campos");
       return;
     }
 
     try {
-      const dadosSalvos = await AsyncStorage.getItem(STORAGE_KEY);
-      const usuarios = dadosSalvos ? JSON.parse(dadosSalvos) : [];
+      await api.post("/user/create", { name, email, senha });
 
-      const existe = usuarios.find((u: any) => u.email === email);
-      if (existe) {
-        Alert.alert("Erro", "Usuário já existe");
-        return;
-      }
-
-      const novoUsuario = { nome, email };
-      usuarios.push(novoUsuario);
-
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(usuarios));
-
-      try {
-        const response = await fetch(
-          "http://192.168.1.138:8080/app_teste/salvar.php",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(novoUsuario)
-          }
-        );
-
-        const responseText = await response.text();
-        let data = null;
-        try {
-          data = JSON.parse(responseText);
-        } catch (parseError) {
-          console.log("Resposta API não é JSON:", responseText);
-        }
-
-        if (response.ok && data?.status === "sucesso") {
-          console.log("Resposta API:", data);
-        } else {
-          console.log("API retornou erro:", response.status, data ?? responseText,);
-          await AsyncStorage.setItem("@meu_app_usuario_offline", JSON.stringify(novoUsuario));
-        }
-      } catch (error) {
-        console.log("Erro ao enviar para API:", error);
-        await AsyncStorage.setItem("@meu_app_usuario_offline", JSON.stringify(novoUsuario));
-      }
-
-      Alert.alert("Sucesso", "Conta criada", [
+      Alert.alert("Sucesso", "Conta criada!", [
         { text: "OK", onPress: () => router.replace("/login") },
       ]);
-    } catch {
-      Alert.alert("Erro", "Falha ao cadastrar");
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        Alert.alert("Erro", "E-mail já cadastrado");
+      } else {
+        Alert.alert("Erro", error.message)
+      }
     }
   };
 
-  return (
+  return ( 
     <ParallaxScrollView
       headerImage={
         <Image
@@ -96,8 +57,8 @@ export default function CadastroUsuarioScreen() {
         <TextInput
           style={styles.input}
           placeholder="Digite seu nome"
-          value={nome}
-          onChangeText={setNome}
+          value={name}
+          onChangeText={setName}
         />
 
         <TextInput
@@ -105,6 +66,16 @@ export default function CadastroUsuarioScreen() {
           placeholder="Digite o email"
           value={email}
           onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Digite sua senha"
+          value={senha}
+          onChangeText={setSenha}
+          secureTextEntry
         />
 
         <Pressable style={styles.botao} onPress={realizarCadastro}>
@@ -119,7 +90,7 @@ export default function CadastroUsuarioScreen() {
       <StatusBar style="auto" />
     </ParallaxScrollView>
   );
-}
+} // ✅ fecha o componente
 
 const styles = StyleSheet.create({
   logo: {
@@ -127,7 +98,6 @@ const styles = StyleSheet.create({
     height: 180,
     width: 290,
   },
-
   texto: {
     fontSize: 20,
     color: "white",
@@ -135,14 +105,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 16,
   },
-
   formContainer: {
     width: "80%",
     alignSelf: "center",
     alignItems: "center",
     gap: 12,
   },
-
   input: {
     width: "100%",
     borderRadius: 10,
@@ -153,7 +121,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14,
   },
-
   botao: {
     width: "100%",
     backgroundColor: "#007AFF",
@@ -162,12 +129,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-
   botaoTexto: {
     color: "#fff",
     fontWeight: "bold",
   },
-
   link: {
     marginTop: 10,
     color: "#007AFF",

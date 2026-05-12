@@ -1,5 +1,6 @@
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { useAuth } from '@/context/auth-context';
+import api from '@/service/api';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -15,25 +16,39 @@ export default function LoginScreen() {
   const router = useRouter();
   const { login } = useAuth();
 
-  const validarLogin = () => {
-    const emailFunc = 'funcionario@email.com';
-    const senhaFunc = '123456';
-
+  const validarLogin = async () => {
     if (usuario === '' || senha === '') {
       Alert.alert('Erro', 'Preencha usuário e senha');
       return;
     }
 
+    // Verificar usuário fixo
+    const emailFunc = 'funcionario@email.com';
+    const senhaFunc = '123456';
     if (usuario === emailFunc && senha === senhaFunc) {
-      login(usuario, 'admin'); // Mantendo a role original se necessária no contexto
+      login(usuario, 'admin');
       Alert.alert('Sucesso', 'Login efetuado com sucesso');
       router.replace('/(tabs)/CadastroVisita');
       return;
     }
 
-    Alert.alert('Erro', 'Usuário ou senha incorretos');
-    setUsuario('');
-    setSenha('');
+    // Tentar login via API
+    try {
+      const response = await api.post("/user/login", { email: usuario, senha });
+      const { email, role } = response.data; // Assumindo que a API retorna { email, role }
+
+      login(email, role || 'user');
+      Alert.alert('Sucesso', 'Login efetuado com sucesso');
+      router.replace('/(tabs)/CadastroVisita');
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        Alert.alert('Erro', 'Usuário ou senha incorretos');
+      } else {
+        Alert.alert('Erro', error.message || 'Erro ao fazer login');
+      }
+      setUsuario('');
+      setSenha('');
+    }
   };
 
   return (
