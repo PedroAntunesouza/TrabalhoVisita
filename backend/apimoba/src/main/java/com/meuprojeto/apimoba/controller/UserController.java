@@ -2,15 +2,15 @@ package com.meuprojeto.apimoba.controller;
 
 import com.meuprojeto.apimoba.entity.User;
 import com.meuprojeto.apimoba.service.UserService;
+import jakarta.persistence.GeneratedValue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import com.meuprojeto.apimoba.service.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/user")
@@ -32,6 +32,11 @@ public class UserController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(401).body(e.getMessage());
         }
+    }
+
+    @GetMapping("/returnAll")
+    public ResponseEntity<List<User>> getAll(){
+        return ResponseEntity.ok(service.returnAll());
     }
 }
 
