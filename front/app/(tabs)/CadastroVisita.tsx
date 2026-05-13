@@ -23,29 +23,40 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Fonts } from '@/constants/theme';
+import api from "@/service/api";
 import { useAuth } from '../../context/auth-context';
 
 interface Visita {
-  id: string;
-  nomeLocal: string;
-  nomeFuncionario: string;
-  observacao: string;
-  imagem: string | null;
+  id?: number;
+  localName: string;
+  observation: string;
+  latitude: number;
+  longitude: number;
+  uriImagem: string;
+  date: string;
 }
 
 const STORAGE_KEY = '@visitas';
 
 export default function CadastroVisitaScreen() {
   const { email } = useAuth();
+
   const [visitas, setVisitas] = useState<Visita[]>([]);
+
   const [nomeLocal, setNomeLocal] = useState('');
-  const [nomeFuncionario, setNomeFuncionario] = useState('');
   const [observacao, setObservacao] = useState('');
+
+  const [latitude, setLatitude] = useState(-23.55052);
+  const [longitude, setLongitude] = useState(-46.633308);
+
   const [imagem, setImagem] = useState<string | null>(null);
+
   const [mapaVisivel, setMapaVisivel] = useState(false);
 
   const [permission, requestPermission] = useCameraPermissions();
+
   const [isCameraActive, setIsCameraActive] = useState(false);
+
   const cameraRef = useRef<any>(null);
 
   useFocusEffect(
@@ -53,109 +64,137 @@ export default function CadastroVisitaScreen() {
       async function carregar() {
         try {
           const dados = await AsyncStorage.getItem(STORAGE_KEY);
+
           if (dados) {
             setVisitas(JSON.parse(dados));
-          } else {
-            setVisitas([]);
           }
         } catch {
           Alert.alert('Erro', 'Falha ao carregar visitas');
         }
       }
+
       carregar();
     }, [])
   );
-
-
 
   async function abrirCamera() {
     if (!permission) {
       await requestPermission();
       return;
     }
+
     if (!permission.granted) {
       const { granted } = await requestPermission();
+
       if (!granted) {
-        Alert.alert('Permissão necessária', 'Permita o acesso à câmera.');
+        Alert.alert(
+          'Permissão necessária',
+          'Permita o acesso à câmera.'
+        );
+
         return;
       }
     }
+
     setIsCameraActive(true);
   }
 
   async function capturarFoto() {
     if (cameraRef.current) {
       const result = await cameraRef.current.takePictureAsync();
+
       setImagem(result.uri);
+
       setIsCameraActive(false);
     }
   }
 
   async function adicionarVisita() {
-    if (!nomeLocal) {
+    if (!nomeLocal.trim()) {
       Alert.alert('Erro', 'Preencha o nome do local');
+
+      return;
+    }
+
+    if (!imagem) {
+      Alert.alert('Erro', 'Tire uma foto');
+
       return;
     }
 
     const novaVisita: Visita = {
-      id: Date.now().toString(),
-      nomeLocal,
-      nomeFuncionario,
-      observacao,
-      imagem,
+      localName: nomeLocal,
+      observation: observacao,
+      latitude: latitude,
+      longitude: longitude,
+      uriImagem: imagem,
+      date: new Date().toISOString(),
     };
 
     try {
+      
+      const response = await api.post(
+        '/visit/create',
+        novaVisita
+      );
+
+      console.log('Resposta API:', response.data);
+
+      // SALVA LOCALMENTE
       const dados = await AsyncStorage.getItem(STORAGE_KEY);
-      const listaAtual: Visita[] = dados ? JSON.parse(dados) : [];
 
-      const novaLista = [...listaAtual, novaVisita];
+      const listaAtual: Visita[] = dados
+        ? JSON.parse(dados)
+        : [];
 
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(novaLista));
+      const novaLista = [...listaAtual, response.data];
+
+      await AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(novaLista)
+      );
 
       setVisitas(novaLista);
 
-      try {
-        const response = await fetch(
-          "http://192.168.1.138:8080/app_teste/salvar_visita.php",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(novaVisita)
-          }
-        );
-        if (!response.ok) {
-          console.log("Erro na API ao salvar visita:", response.status);
-        }
-      } catch (apiError) {
-        console.log("Erro de rede ao salvar visita na API:", apiError);
-      }
-
+      // LIMPA CAMPOS
       setNomeLocal('');
       setObservacao('');
       setImagem(null);
 
       Alert.alert('Sucesso', 'Visita cadastrada!');
-    } catch {
-      Alert.alert('Erro', 'Falha ao salvar visita');
+    } catch (error) {
+      console.log(error);
+
+      Alert.alert('Erro', 'Falha ao cadastrar visita');
     }
   }
 
-  async function removerVisita(id: string) {
-    const novaLista = visitas.filter((item) => item.id !== id);
+  async function removerVisita(id: number) {
+    const novaLista = visitas.filter(
+      (item) => item.id !== id
+    );
 
     setVisitas(novaLista);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(novaLista));
+
+    await AsyncStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(novaLista)
+    );
   }
 
   if (isCameraActive) {
     return (
       <View style={styles.cameraContainer}>
-        <CameraView ref={cameraRef} style={styles.camera} />
+        <CameraView
+          ref={cameraRef}
+          style={styles.camera}
+        />
+
         <View style={styles.cameraButtonsContainer}>
-          <Button title="TIRAR FOTO" onPress={capturarFoto} />
+          <Button
+            title="TIRAR FOTO"
+            onPress={capturarFoto}
+          />
         </View>
       </View>
     );
@@ -163,7 +202,10 @@ export default function CadastroVisitaScreen() {
 
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
+      headerBackgroundColor={{
+        light: '#D0D0D0',
+        dark: '#353636',
+      }}
       headerImage={
         <IconSymbol
           size={310}
@@ -174,13 +216,20 @@ export default function CadastroVisitaScreen() {
       }
     >
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title" style={{ fontFamily: Fonts.rounded }}>
+        <ThemedText
+          type="title"
+          style={{ fontFamily: Fonts.rounded }}
+        >
           Olá {email}
         </ThemedText>
       </ThemedView>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'android' ? 'padding' : undefined}
+        behavior={
+          Platform.OS === 'android'
+            ? 'padding'
+            : undefined
+        }
         keyboardVerticalOffset={100}
       >
         <ThemedView style={styles.formContainer}>
@@ -197,26 +246,35 @@ export default function CadastroVisitaScreen() {
 
           <TextInput
             style={styles.input}
-            placeholder="Quem realizou a visita?"
-            value={nomeFuncionario}
-            onChangeText={setNomeFuncionario}
-          />
-
-          <TextInput
-            style={styles.input}
-            placeholder="Observação (opcional)"
+            placeholder="Observação"
             value={observacao}
             onChangeText={setObservacao}
           />
 
           <View style={styles.rowButtons}>
-            <Pressable style={[styles.imageButton, { flex: 1, marginRight: 5 }]} onPress={abrirCamera}>
+            <Pressable
+              style={[
+                styles.imageButton,
+                { flex: 1, marginRight: 5 },
+              ]}
+              onPress={abrirCamera}
+            >
               <ThemedText style={styles.imageButtonText}>
                 Tirar Foto
               </ThemedText>
             </Pressable>
 
-            <Pressable style={[styles.imageButton, { flex: 1, marginLeft: 5, backgroundColor: '#4CAF50' }]} onPress={() => setMapaVisivel(true)}>
+            <Pressable
+              style={[
+                styles.imageButton,
+                {
+                  flex: 1,
+                  marginLeft: 5,
+                  backgroundColor: '#4CAF50',
+                },
+              ]}
+              onPress={() => setMapaVisivel(true)}
+            >
               <ThemedText style={styles.imageButtonText}>
                 Ver Mapa
               </ThemedText>
@@ -224,10 +282,16 @@ export default function CadastroVisitaScreen() {
           </View>
 
           {imagem && (
-            <Image source={{ uri: imagem }} style={styles.previewImage} />
+            <Image
+              source={{ uri: imagem }}
+              style={styles.previewImage}
+            />
           )}
 
-          <Button title="Cadastrar Visita" onPress={adicionarVisita} />
+          <Button
+            title="Cadastrar Visita"
+            onPress={adicionarVisita}
+          />
         </ThemedView>
       </KeyboardAvoidingView>
 
@@ -239,28 +303,38 @@ export default function CadastroVisitaScreen() {
 
           <FlatList
             data={visitas}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) =>
+              item.id?.toString() || Math.random().toString()
+            }
             renderItem={({ item }) => (
               <ThemedView style={styles.visitaCard}>
-                {item.imagem && (
+                {item.uriImagem && (
                   <Image
-                    source={{ uri: item.imagem }}
+                    source={{ uri: item.uriImagem }}
                     style={styles.cardImage}
                   />
                 )}
 
                 <ThemedText style={styles.textCard}>
-                  Local: {item.nomeLocal}
+                  Local: {item.localName}
                 </ThemedText>
 
                 <ThemedText style={styles.textCard}>
-                  Funcionário responsável: {item.nomeFuncionario}
+                  Observação:{' '}
+                  {item.observation || 'Nenhuma'}
                 </ThemedText>
 
-                <ThemedText style={styles.textCard}>Observação: {item.observacao ? item.observacao : 'Nenhuma'}</ThemedText>
-
-                <Pressable onPress={() => removerVisita(item.id)}>
-                  <ThemedText style={{ color: 'red', marginTop: 6 }}>
+                <Pressable
+                  onPress={() =>
+                    item.id && removerVisita(item.id)
+                  }
+                >
+                  <ThemedText
+                    style={{
+                      color: 'red',
+                      marginTop: 6,
+                    }}
+                  >
                     Excluir
                   </ThemedText>
                 </Pressable>
@@ -270,19 +344,27 @@ export default function CadastroVisitaScreen() {
         </ThemedView>
       )}
 
-      <Modal visible={mapaVisivel} animationType="slide" transparent={false}>
+      <Modal
+        visible={mapaVisivel}
+        animationType="slide"
+        transparent={false}
+      >
         <View style={{ flex: 1 }}>
           <MapView
             style={{ flex: 1 }}
             initialRegion={{
-              latitude: -23.55052, // Coordenada de exemplo, SP
+              latitude: -23.55052,
               longitude: -46.633308,
               latitudeDelta: 0.0922,
               longitudeDelta: 0.0421,
             }}
           />
+
           <View style={styles.mapCloseButton}>
-            <Button title="Fechar Mapa" onPress={() => setMapaVisivel(false)} />
+            <Button
+              title="Fechar Mapa"
+              onPress={() => setMapaVisivel(false)}
+            />
           </View>
         </View>
       </Modal>
@@ -298,19 +380,23 @@ const styles = StyleSheet.create({
     bottom: -90,
     left: -35,
   },
+
   titleContainer: {
     marginBottom: 20,
   },
+
   formContainer: {
     padding: 16,
     borderRadius: 8,
   },
+
   formTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 12,
     fontFamily: Fonts.rounded,
   },
+
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -319,6 +405,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: '#f9f9f9',
   },
+
   imageButton: {
     backgroundColor: '#007AFF',
     padding: 12,
@@ -326,25 +413,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
+
   imageButtonText: {
     color: '#fff',
     fontWeight: '600',
   },
+
   previewImage: {
     width: '100%',
     height: 180,
     borderRadius: 8,
     marginBottom: 10,
   },
+
   visitasContainer: {
     padding: 16,
   },
+
   visitasTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 10,
     fontFamily: Fonts.rounded,
   },
+
   visitaCard: {
     borderWidth: 1,
     borderColor: '#ddd',
@@ -352,28 +444,34 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
   },
+
   cardImage: {
     width: '100%',
     height: 150,
     borderRadius: 6,
     marginBottom: 8,
   },
+
   textCard: {
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
+
   rowButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 10,
   },
+
   cameraContainer: {
     flex: 1,
   },
+
   camera: {
     flex: 1,
   },
+
   cameraButtonsContainer: {
     position: 'absolute',
     bottom: 40,
@@ -382,6 +480,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingHorizontal: 20,
   },
+
   mapCloseButton: {
     position: 'absolute',
     bottom: 30,
