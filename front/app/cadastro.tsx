@@ -1,9 +1,11 @@
 import ParallaxScrollView from "@/components/parallax-scroll-view";
 import api from "@/service/api";
+import { useAuth } from "@/context/auth-context";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
+import AntDesign from "@expo/vector-icons/AntDesign";
 import {
   Alert,
   Pressable,
@@ -17,8 +19,10 @@ export default function CadastroUsuarioScreen() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [showSenha, setShowSenha] = useState(false);
 
   const router = useRouter();
+  const { login } = useAuth();
 
   const realizarCadastro = async () => {
     if (!name.trim() || !email.trim() || !senha.trim()) {
@@ -29,19 +33,26 @@ export default function CadastroUsuarioScreen() {
     try {
       await api.post("/user/create", { name, email, senha });
 
+      login(email, "user", name);
+
       Alert.alert("Sucesso", "Conta criada!", [
-        { text: "OK", onPress: () => router.replace("/login") },
+        {
+          text: "OK",
+          onPress: () => router.replace("/login"),
+        },
       ]);
     } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.response?.data || error.message || "Erro ao realizar cadastro";
+
       if (error.response?.status === 409) {
-        Alert.alert("Erro", "E-mail já cadastrado");
+        Alert.alert("Erro", "E-mail já cadastrado!");
       } else {
-        Alert.alert("Erro", error.message)
+        Alert.alert("Erro", typeof errorMessage === 'string' ? errorMessage : "Está conta já está cadastrada!");
       }
     }
   };
 
-  return ( 
+  return (
     <ParallaxScrollView
       headerImage={
         <Image
@@ -63,34 +74,47 @@ export default function CadastroUsuarioScreen() {
 
         <TextInput
           style={styles.input}
-          placeholder="Digite o email"
+          placeholder="Digite seu email"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
         />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Digite sua senha"
-          value={senha}
-          onChangeText={setSenha}
-          secureTextEntry
-        />
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={[styles.input, styles.passwordInput]}
+            placeholder="Digite sua senha"
+            value={senha}
+            onChangeText={setSenha}
+            secureTextEntry={!showSenha}
+          />
+
+          <Pressable
+            onPress={() => setShowSenha((v) => !v)}
+            style={styles.revealButton}
+          >
+            <AntDesign
+              name={showSenha ? "eye-invisible" : "eye"}
+              size={22}
+              color="#007AFF"
+            />
+          </Pressable>
+        </View>
 
         <Pressable style={styles.botao} onPress={realizarCadastro}>
           <Text style={styles.botaoTexto}>Cadastrar</Text>
         </Pressable>
 
         <Pressable onPress={() => router.replace("/login")}>
-          <Text style={styles.link}>Já tem conta? Login</Text>
+          <Text style={styles.link}>Já tem um cadastro? Faça o Login!</Text>
         </Pressable>
       </View>
 
       <StatusBar style="auto" />
     </ParallaxScrollView>
   );
-} // ✅ fecha o componente
+}
 
 const styles = StyleSheet.create({
   logo: {
@@ -137,5 +161,19 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: "#007AFF",
     fontWeight: "600",
+  },
+  passwordContainer: {
+    width: "100%",
+    position: "relative",
+    justifyContent: "center",
+  },
+  passwordInput: {
+    paddingRight: 45,
+  },
+  revealButton: {
+    position: "absolute",
+    right: 10,
+    height: "100%",
+    justifyContent: "center",
   },
 });

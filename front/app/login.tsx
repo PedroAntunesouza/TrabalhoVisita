@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { Alert, Button, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function LoginScreen() {
-  const [usuario, setUsuario] = useState('');
+  const [loginValue, setLoginValue] = useState('');
   const [senha, setSenha] = useState('');
   const [showSenha, setShowSenha] = useState(false);
 
@@ -17,27 +17,18 @@ export default function LoginScreen() {
   const { login } = useAuth();
 
   const validarLogin = async () => {
-    if (usuario === '' || senha === '') {
+    if (loginValue === '' || senha === '') {
       Alert.alert('Erro', 'Preencha usuário e senha');
       return;
     }
 
-    // Verificar usuário fixo
-    const emailFunc = 'funcionario@email.com';
-    const senhaFunc = '123456';
-    if (usuario === emailFunc && senha === senhaFunc) {
-      login(usuario, 'admin');
-      Alert.alert('Sucesso', 'Login efetuado com sucesso');
-      router.replace('/(tabs)/CadastroVisita');
-      return;
-    }
 
     // Tentar login via API
     try {
-      const response = await api.post("/user/login", { email: usuario, senha });
-      const { email, role } = response.data; // Assumindo que a API retorna { email, role }
+      const response = await api.post("/user/login", { name: loginValue, email: loginValue, senha });
+      const { email, name, role } = response.data;
 
-      login(email, role || 'user');
+      login(email, role || 'user', name);
       Alert.alert('Sucesso', 'Login efetuado com sucesso');
       router.replace('/(tabs)/CadastroVisita');
     } catch (error: any) {
@@ -46,7 +37,7 @@ export default function LoginScreen() {
       } else {
         Alert.alert('Erro', error.message || 'Erro ao fazer login');
       }
-      setUsuario('');
+      setLoginValue('');
       setSenha('');
     }
   };
@@ -66,15 +57,15 @@ export default function LoginScreen() {
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Digite o usuário"
-          value={usuario}
-          onChangeText={setUsuario}
+          placeholder="Digite seu nome ou email"
+          value={loginValue}
+          onChangeText={setLoginValue}
         />
 
         <View style={styles.passwordContainer}>
           <TextInput
             style={[styles.input, styles.passwordInput]}
-            placeholder="Digite a senha"
+            placeholder="Digite sua senha"
             value={senha}
             onChangeText={setSenha}
             secureTextEntry={!showSenha}
@@ -98,7 +89,7 @@ export default function LoginScreen() {
 
         <Pressable onPress={() => router.replace('/cadastro')}>
           <Text style={styles.cadastroTexto}>
-            Não tem conta? Cadastre-se aqui
+            Não tem uma conta? Cadastre-se aqui!
           </Text>
         </Pressable>
       </View>
