@@ -10,14 +10,27 @@ import { useCallback, useState } from 'react';
 import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
 
 type Visita = {
-  id: string;
-  nomeLocal: string;
-  nomeFuncionario: string;
-  observacao: string;
-  imagem: string | null;
+  id: number;
+  localName: string;
+  observation: string;
+  latitude: number;
+  longitude: number;
+  uriImagem: string;
+  date: string;
 };
 
 const STORAGE_KEY = '@visitas';
+
+function formatarData(dataISO: string) {
+  if (!dataISO) return '';
+  const data = new Date(dataISO);
+  const dia = String(data.getDate()).padStart(2, '0');
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const ano = data.getFullYear();
+  const horas = String(data.getHours()).padStart(2, '0');
+  const minutos = String(data.getMinutes()).padStart(2, '0');
+  return `${dia}/${mes}/${ano} às ${horas}:${minutos}`;
+}
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -74,29 +87,37 @@ export default function HomeScreen() {
 
       <FlatList
         data={visitas}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
         scrollEnabled={false}
         renderItem={({ item }) => (
           <ThemedView style={styles.visitaCard}>
-            {item.imagem && (
+            {item.uriImagem && (
               <Image
-                source={{ uri: item.imagem }}
+                source={{ uri: item.uriImagem }}
                 style={styles.imagem}
                 resizeMode="cover"
               />
             )}
 
             <ThemedText style={styles.textCard}>
-              Local: {item.nomeLocal}
+              Local: {item.localName}
             </ThemedText>
 
             <ThemedText style={styles.textCard}>
-              Funcionário responsável: {item.nomeFuncionario}
+              Observação: {item.observation ? item.observation : 'Nenhuma'}
             </ThemedText>
 
-            <ThemedText style={styles.textCard}>
-              Observação: {item.observacao ? item.observacao : 'Nenhuma'}
-            </ThemedText>
+            {item.latitude != null && item.longitude != null && (
+              <ThemedText style={styles.textCard}>
+                Coordenadas: {item.latitude.toFixed(5)}, {item.longitude.toFixed(5)}
+              </ThemedText>
+            )}
+
+            {item.date && (
+              <ThemedText style={styles.textCard}>
+                Registrado em: {formatarData(item.date)}
+              </ThemedText>
+            )}
           </ThemedView>
         )}
       />
