@@ -26,8 +26,21 @@ public class UserService {
     }
 
     public User login(User user) {
-        User encontrado = repository.findByEmail(user.getEmail())
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        User encontrado = null;
+
+        // Tenta encontrar pelo email
+        if (user.getEmail() != null && !user.getEmail().isBlank()) {
+            encontrado = repository.findByEmail(user.getEmail()).orElse(null);
+        }
+
+        // Se não achou pelo email, tenta pelo name
+        if (encontrado == null && user.getName() != null && !user.getName().isBlank()) {
+            encontrado = repository.findByName(user.getName()).orElse(null);
+        }
+
+        if (encontrado == null) {
+            throw new RuntimeException("Usuário não encontrado");
+        }
 
         if (!encontrado.getSenha().equals(user.getSenha())) {
             throw new RuntimeException("Senha incorreta");
