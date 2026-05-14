@@ -7,6 +7,8 @@ import com.meuprojeto.apimoba.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -27,6 +29,11 @@ public class PlaceVisitedService {
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
         placeVisited.setUser(user);
+
+        placeVisited.setDate(
+                LocalDateTime.now(ZoneId.of("America/Sao_Paulo"))
+        );
+
         return repository.save(placeVisited);
     }
 
