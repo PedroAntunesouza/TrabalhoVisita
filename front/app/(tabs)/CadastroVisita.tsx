@@ -33,7 +33,6 @@ interface Visita {
   latitude: number;
   longitude: number;
   uriImagem: string;
-  date: string;
   userEmail?: string;
 }
 
@@ -129,7 +128,6 @@ export default function CadastroVisitaScreen() {
       latitude: latitude,
       longitude: longitude,
       uriImagem: imagem,
-      date: new Date().toISOString(),
     };
 
     try {
