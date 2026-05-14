@@ -1,5 +1,6 @@
 package com.meuprojeto.apimoba.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -32,6 +33,7 @@ public class PlaceVisited {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
+    @JsonIgnore
     private User user;
 
     public User getUser(){
@@ -99,5 +101,9 @@ public class PlaceVisited {
 
     public void setUriImagem(String uriImagem) {
         this.uriImagem = uriImagem;
+    }
+
+    public String getUserEmail() {
+        return user != null ? user.getEmail() : null;
     }
 }

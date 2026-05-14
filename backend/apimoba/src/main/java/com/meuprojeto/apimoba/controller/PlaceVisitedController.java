@@ -1,6 +1,7 @@
 package com.meuprojeto.apimoba.controller;
 
 import com.meuprojeto.apimoba.entity.PlaceVisited;
+import com.meuprojeto.apimoba.entity.User;
 import com.meuprojeto.apimoba.service.PlaceVisitedService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +18,9 @@ public class PlaceVisitedController {
     private PlaceVisitedService service;
 
     @PostMapping("/create")
-    public PlaceVisited criar(@RequestBody PlaceVisited placeVisited){
-        return service.createVisit(placeVisited);
+    public ResponseEntity<PlaceVisited> create(@RequestBody PlaceVisited placeVisited,
+                                               @RequestParam String email) {
+        return ResponseEntity.ok(service.createVisit(placeVisited, email));
     }
 
     @GetMapping("/returnAll")

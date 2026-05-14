@@ -35,6 +35,8 @@ interface Visita {
   longitude: number;
   uriImagem: string;
   date: string;
+  userEmail?: string;
+
 }
 
 interface Coordenadas {
@@ -174,7 +176,8 @@ export default function CadastroVisitaScreen() {
     };
 
     try {
-      const response = await api.post('/visit/create', novaVisita);
+    
+      const response = await api.post(`/visit/create?email=${email}`, novaVisita);
 
       console.log('Resposta API:', response.data);
 
@@ -356,6 +359,21 @@ export default function CadastroVisitaScreen() {
 
                 <Pressable onPress={() => item.id && removerVisita(item.id)}>
                   <ThemedText style={{ color: 'red', marginTop: 6 }}>
+                <ThemedText style={{ fontSize: 13, color: '#888', marginTop: 2 }}>
+                  Cadastrado por: {item.userEmail || 'Desconhecido'}
+                </ThemedText>
+
+                <Pressable
+                  onPress={() =>
+                    item.id && removerVisita(item.id)
+                  }
+                >
+                  <ThemedText
+                    style={{
+                      color: 'red',
+                      marginTop: 6,
+                    }}
+                  >
                     Excluir
                   </ThemedText>
                 </Pressable>
