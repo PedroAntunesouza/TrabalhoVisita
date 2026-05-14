@@ -15,8 +15,9 @@ import {
   View,
 } from 'react-native';
 
+import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import MapView from 'react-native-maps';
+import MapView, { Marker, MapPressEvent } from 'react-native-maps';
 
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
@@ -36,6 +37,11 @@ interface Visita {
   userEmail?: string;
 }
 
+interface Coordenadas {
+  latitude: number;
+  longitude: number;
+}
+
 const STORAGE_KEY = '@visitas';
 
 export default function CadastroVisitaScreen() {
@@ -46,8 +52,14 @@ export default function CadastroVisitaScreen() {
   const [nomeLocal, setNomeLocal] = useState('');
   const [observacao, setObservacao] = useState('');
 
-  const [latitude, setLatitude] = useState(-23.55052);
-  const [longitude, setLongitude] = useState(-46.633308);
+  const [coordenadas, setCoordenadas] = useState<Coordenadas | null>(null);
+  const [marcadorTemp, setMarcadorTemp] = useState<Coordenadas | null>(null);
+  const [regiaoInicial, setRegiaoInicial] = useState({
+    latitude: -15.7801,
+    longitude: -47.9292,
+    latitudeDelta: 10,
+    longitudeDelta: 10,
+  });
 
   const [imagem, setImagem] = useState<string | null>(null);
 
@@ -76,6 +88,39 @@ export default function CadastroVisitaScreen() {
       carregar();
     }, [])
   );
+
+  async function abrirMapa() {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setRegiaoInicial({
+          latitude: loc.coords.latitude,
+          longitude: loc.coords.longitude,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        });
+      }
+    } catch {
+      // Falha ao obter localização
+    }
+    setMarcadorTemp(coordenadas);
+    setMapaVisivel(true);
+  }
+
+  function selecionarLocalNoMapa(event: MapPressEvent) {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    setMarcadorTemp({ latitude, longitude });
+  }
+
+  function confirmarLocalizacao() {
+    if (!marcadorTemp) {
+      Alert.alert('Atenção', 'Toque no mapa para marcar o local');
+      return;
+    }
+    setCoordenadas(marcadorTemp);
+    setMapaVisivel(false);
+  }
 
   async function abrirCamera() {
     if (!permission) {
@@ -118,15 +163,19 @@ export default function CadastroVisitaScreen() {
 
     if (!imagem) {
       Alert.alert('Erro', 'Tire uma foto');
+      return;
+    }
 
+    if (!coordenadas) {
+      Alert.alert('Erro', 'Marque a localização no mapa');
       return;
     }
 
     const novaVisita: Visita = {
       localName: nomeLocal,
       observation: observacao,
-      latitude: latitude,
-      longitude: longitude,
+      latitude: coordenadas.latitude,
+      longitude: coordenadas.longitude,
       uriImagem: imagem,
     };
 
@@ -156,6 +205,8 @@ export default function CadastroVisitaScreen() {
       setNomeLocal('');
       setObservacao('');
       setImagem(null);
+      setCoordenadas(null);
+      setMarcadorTemp(null);
 
       Alert.alert('Sucesso', 'Visita cadastrada!');
     } catch (error) {
@@ -186,11 +237,17 @@ export default function CadastroVisitaScreen() {
           style={styles.camera}
         />
 
+        <Pressable 
+          style={styles.cameraBackButton} 
+          onPress={() => setIsCameraActive(false)}
+        >
+          <IconSymbol name="chevron.left" size={32} color="#fff" />
+        </Pressable>
+
         <View style={styles.cameraButtonsContainer}>
-          <Button
-            title="TIRAR FOTO"
-            onPress={capturarFoto}
-          />
+          <Pressable style={styles.cameraCaptureButton} onPress={capturarFoto}>
+            <IconSymbol name="camera.fill" size={36} color="#000" />
+          </Pressable>
         </View>
       </View>
     );
@@ -269,7 +326,7 @@ export default function CadastroVisitaScreen() {
                   backgroundColor: '#4CAF50',
                 },
               ]}
-              onPress={() => setMapaVisivel(true)}
+              onPress={abrirMapa}
             >
               <ThemedText style={styles.imageButtonText}>
                 Ver Mapa
@@ -278,10 +335,25 @@ export default function CadastroVisitaScreen() {
           </View>
 
           {imagem && (
-            <Image
-              source={{ uri: imagem }}
-              style={styles.previewImage}
-            />
+            <ThemedView style={styles.cardPrevia}>
+              <ThemedText style={styles.cardPreviaTitulo}>Foto capturada</ThemedText>
+              <Image
+                source={{ uri: imagem }}
+                style={styles.previewImage}
+              />
+            </ThemedView>
+          )}
+
+          {coordenadas && (
+            <ThemedView style={styles.cardPrevia}>
+              <ThemedText style={styles.cardPreviaTitulo}>Local marcado</ThemedText>
+              <ThemedText style={{ color: 'gray' }}>
+                Latitude: {coordenadas.latitude.toFixed(6)}
+              </ThemedText>
+              <ThemedText style={{ color: 'gray' }}>
+                Longitude: {coordenadas.longitude.toFixed(6)}
+              </ThemedText>
+            </ThemedView>
           )}
 
           <Button
@@ -350,21 +422,36 @@ export default function CadastroVisitaScreen() {
         transparent={false}
       >
         <View style={{ flex: 1 }}>
+          {marcadorTemp && (
+            <View style={styles.coordsFloatingBox}>
+              <ThemedText style={{ fontWeight: 'bold', color: '#fff' }}>Local Selecionado</ThemedText>
+              <ThemedText style={{ color: '#fff' }}>Lat: {marcadorTemp.latitude.toFixed(5)}</ThemedText>
+              <ThemedText style={{ color: '#fff' }}>Lng: {marcadorTemp.longitude.toFixed(5)}</ThemedText>
+            </View>
+          )}
+
           <MapView
             style={{ flex: 1 }}
-            initialRegion={{
-              latitude: -23.55052,
-              longitude: -46.633308,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421,
-            }}
-          />
+            initialRegion={regiaoInicial}
+            onPress={selecionarLocalNoMapa}
+          >
+            {marcadorTemp && <Marker coordinate={marcadorTemp} />}
+          </MapView>
 
-          <View style={styles.mapCloseButton}>
-            <Button
-              title="Fechar Mapa"
+          <View style={styles.mapActionsContainer}>
+            <Pressable
+              style={[styles.mapActionButton, { backgroundColor: '#FF3B30' }]}
               onPress={() => setMapaVisivel(false)}
-            />
+            >
+              <ThemedText style={styles.mapActionText}>Cancelar</ThemedText>
+            </Pressable>
+
+            <Pressable
+              style={[styles.mapActionButton, { backgroundColor: '#34C759' }]}
+              onPress={confirmarLocalizacao}
+            >
+              <ThemedText style={styles.mapActionText}>Confirmar Local</ThemedText>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -426,6 +513,66 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
+  cardPrevia: {
+    backgroundColor: 'transparent',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#fff',
+    marginBottom: 10,
+  },
+
+  cardPreviaTitulo: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 6,
+  },
+
+  coordsFloatingBox: {
+    position: 'absolute',
+    top: 50,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#fff',
+    zIndex: 10,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+
+  mapActionsContainer: {
+    position: 'absolute',
+    bottom: 40,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    paddingHorizontal: 20,
+  },
+
+  mapActionButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    minWidth: 140,
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+
+  mapActionText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+
   visitasContainer: {
     padding: 16,
   },
@@ -466,19 +613,46 @@ const styles = StyleSheet.create({
 
   cameraContainer: {
     flex: 1,
+    justifyContent: 'center',
+    backgroundColor: '#000',
   },
 
   camera: {
     flex: 1,
   },
 
+  cameraBackButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+
   cameraButtonsContainer: {
     position: 'absolute',
     bottom: 40,
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingHorizontal: 20,
+    alignSelf: 'center',
+    zIndex: 10,
+  },
+
+  cameraCaptureButton: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
 
   mapCloseButton: {
