@@ -66,7 +66,7 @@ export default function LoginScreen() {
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Digite o usuário"
+          placeholder="Digite o email"
           value={usuario}
           onChangeText={setUsuario}
         />
