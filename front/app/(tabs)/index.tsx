@@ -18,6 +18,7 @@ type Visita = {
   longitude: number;
   uriImagem: string;
   date: string;
+  userEmail?: string;
 };
 
 const STORAGE_KEY = '@visitas';
@@ -48,9 +49,7 @@ export default function HomeScreen() {
         }
 
         try {
-          const response = await api.get('/visit/list', {
-            params: { email },
-          });
+          const response = await api.get('/visit/returnAll');
 
           const visitasCarregadas = response.data || [];
           setVisitas(visitasCarregadas);
@@ -118,6 +117,12 @@ export default function HomeScreen() {
           <ThemedText style={styles.textCard}>
             Local: {item.localName}
           </ThemedText>
+
+          {item.userEmail && (
+            <ThemedText style={styles.textCard}>
+              Registrado por: {item.userEmail}
+            </ThemedText>
+          )}
 
           <ThemedText style={styles.textCard}>
             Observação: {item.observation ? item.observation : 'Nenhuma'}
