@@ -23,7 +23,6 @@ export default function LoginScreen() {
       return;
     }
 
-    // Verificar usuário fixo
     const emailFunc = 'funcionario@email.com';
     const senhaFunc = '123456';
     if (usuario === emailFunc && senha === senhaFunc) {
@@ -33,10 +32,9 @@ export default function LoginScreen() {
       return;
     }
 
-    // Tentar login via API
     try {
       const response = await api.post("/user/login", { email: usuario, senha });
-      const { email, role } = response.data; // Assumindo que a API retorna { email, role }
+      const { email, role } = response.data; 
 
       login(email, role || 'user');
       Alert.alert('Sucesso', 'Login efetuado com sucesso');

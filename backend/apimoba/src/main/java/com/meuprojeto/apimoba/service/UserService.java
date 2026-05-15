@@ -28,12 +28,10 @@ public class UserService {
     public User login(User user) {
         User encontrado = null;
 
-        // Tenta encontrar pelo email
         if (user.getEmail() != null && !user.getEmail().isBlank()) {
             encontrado = repository.findByEmail(user.getEmail()).orElse(null);
         }
 
-        // Se não achou pelo email, tenta pelo name
         if (encontrado == null && user.getName() != null && !user.getName().isBlank()) {
             encontrado = repository.findByName(user.getName()).orElse(null);
         }
@@ -49,7 +47,7 @@ public class UserService {
         return encontrado;
     }
 
-    public List<User> returnAll(){
+    public List<User> returnAll() {
         return repository.findAll();
     }
 }

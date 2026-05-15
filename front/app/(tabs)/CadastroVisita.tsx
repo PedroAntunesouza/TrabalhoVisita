@@ -84,7 +84,6 @@ export default function CadastroVisitaScreen() {
 
   const cameraRef = useRef<any>(null);
 
-  // Estados para Edição
   const [modalEdicaoVisivel, setModalEdicaoVisivel] = useState(false);
   const [visitaSendoEditada, setVisitaSendoEditada] = useState<Visita | null>(null);
   const [nomeLocalEdit, setNomeLocalEdit] = useState('');
@@ -835,7 +834,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
 
-  // Estilos Câmera/Mapa
   cameraContainer: {
     flex: 1,
     backgroundColor: '#000',

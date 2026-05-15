@@ -8,8 +8,6 @@ import Animated, {
     useScrollOffset,
 } from 'react-native-reanimated';
 
-import { ThemedView } from '@/components/themed-view';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
 const HEADER_HEIGHT = 140;
@@ -45,7 +43,9 @@ export default function ParallaxScrollView({
     };
   });
 
-  // state to control whether scrolling is allowed based on content height
+    };
+  });
+
   const [scrollEnabled, setScrollEnabled] = useState(false);
   const [containerHeight, setContainerHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
@@ -59,7 +59,6 @@ export default function ParallaxScrollView({
     setContentHeight(h);
   };
 
-  // recompute scrollEnabled whenever relevant values change
   useEffect(() => {
     if (keyboardVisible) {
       setScrollEnabled(true);
@@ -111,7 +110,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   content: {
-    // flex:1 removed to avoid forcing extra height inside ScrollView
     padding: 20,
     gap: 12,
     overflow: 'hidden',

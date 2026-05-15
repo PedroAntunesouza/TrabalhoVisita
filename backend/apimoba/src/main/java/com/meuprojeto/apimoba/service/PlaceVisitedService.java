@@ -31,13 +31,12 @@ public class PlaceVisitedService {
         placeVisited.setUser(user);
 
         placeVisited.setDate(
-                LocalDateTime.now(ZoneId.of("America/Sao_Paulo"))
-        );
+                LocalDateTime.now(ZoneId.of("America/Sao_Paulo")));
 
         return repository.save(placeVisited);
     }
 
-    public List<PlaceVisited> returnAll(){
+    public List<PlaceVisited> returnAll() {
         return repository.findAll();
     }
 
@@ -49,13 +48,16 @@ public class PlaceVisitedService {
         PlaceVisited existing = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Visita não encontrada"));
 
-        if (data.getLocalName() != null) existing.setLocalName(data.getLocalName());
-        if (data.getObservation() != null) existing.setObservation(data.getObservation());
-        if (data.getLatitude() != 0) existing.setLatitude(data.getLatitude());
-        if (data.getLongitude() != 0) existing.setLongitude(data.getLongitude());
-        if (data.getUriImagem() != null) existing.setUriImagem(data.getUriImagem());
-
-        // A data (LocalDateTime date) NÃO é alterada, mantendo o registro original.
+        if (data.getLocalName() != null)
+            existing.setLocalName(data.getLocalName());
+        if (data.getObservation() != null)
+            existing.setObservation(data.getObservation());
+        if (data.getLatitude() != 0)
+            existing.setLatitude(data.getLatitude());
+        if (data.getLongitude() != 0)
+            existing.setLongitude(data.getLongitude());
+        if (data.getUriImagem() != null)
+            existing.setUriImagem(data.getUriImagem());
 
         return repository.save(existing);
     }
