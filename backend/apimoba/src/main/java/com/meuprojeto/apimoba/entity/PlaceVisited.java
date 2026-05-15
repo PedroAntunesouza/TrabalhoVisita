@@ -1,6 +1,7 @@
 package com.meuprojeto.apimoba.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -42,6 +43,11 @@ public class PlaceVisited {
 
     public void setUser(User user){
         this.user = user;
+    }
+
+    @JsonProperty("userEmail")
+    public String getUserEmail() {
+        return user != null ? user.getEmail() : null;
     }
 
     public PlaceVisited(){
@@ -101,9 +107,5 @@ public class PlaceVisited {
 
     public void setUriImagem(String uriImagem) {
         this.uriImagem = uriImagem;
-    }
-
-    public String getUserEmail() {
-        return user != null ? user.getEmail() : null;
     }
 }

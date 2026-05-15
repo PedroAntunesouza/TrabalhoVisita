@@ -1,5 +1,7 @@
 package com.meuprojeto.apimoba.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -17,9 +19,11 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     @Column(nullable = false)
     private String senha;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "user")
     private List<PlaceVisited> visits;
 

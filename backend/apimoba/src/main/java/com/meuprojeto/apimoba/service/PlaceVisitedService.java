@@ -40,4 +40,8 @@ public class PlaceVisitedService {
     public List<PlaceVisited> returnAll(){
         return repository.findAll();
     }
+
+    public List<PlaceVisited> findByEmail(String email) {
+        return repository.findByUserEmail(email);
+    }
 }
