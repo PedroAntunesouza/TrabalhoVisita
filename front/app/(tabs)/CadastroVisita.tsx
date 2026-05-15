@@ -4,7 +4,6 @@ import { useCallback, useRef, useState } from 'react';
 import {
   Alert,
   Button,
-  FlatList,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -15,9 +14,9 @@ import {
   View,
 } from 'react-native';
 
-import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import MapView, { Marker, MapPressEvent } from 'react-native-maps';
+import * as Location from 'expo-location';
+import MapView, { MapPressEvent, Marker } from 'react-native-maps';
 
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
@@ -35,6 +34,9 @@ interface Visita {
   longitude: number;
   uriImagem: string;
   userEmail?: string;
+  user?: {
+    email?: string;
+  };
 }
 
 interface Coordenadas {
@@ -74,19 +76,39 @@ export default function CadastroVisitaScreen() {
   useFocusEffect(
     useCallback(() => {
       async function carregar() {
-        try {
-          const dados = await AsyncStorage.getItem(STORAGE_KEY);
+        if (!email) {
+          setVisitas([]);
+          return;
+        }
 
-          if (dados) {
-            setVisitas(JSON.parse(dados));
+        try {
+          const response = await api.get('/visit/list', {
+            params: { email },
+          });
+
+          const visitasCarregadas = response.data || [];
+          setVisitas(visitasCarregadas);
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(visitasCarregadas));
+        } catch (error: any) {
+          console.log('Erro ao carregar visitas:', error.response?.data || error.message || error);
+
+          try {
+            const dados = await AsyncStorage.getItem(STORAGE_KEY);
+            if (dados) {
+              setVisitas(JSON.parse(dados));
+              return;
+            }
+          } catch (storageError) {
+            console.log('Erro ao carregar visitas do cache:', storageError);
           }
-        } catch {
+
           Alert.alert('Erro', 'Falha ao carregar visitas');
+          setVisitas([]);
         }
       }
 
       carregar();
-    }, [])
+    }, [email])
   );
 
   async function abrirMapa() {
@@ -179,27 +201,19 @@ export default function CadastroVisitaScreen() {
       uriImagem: imagem,
     };
 
+    if (!email) {
+      Alert.alert('Erro', 'Email do usuário não encontrado. Faça login novamente.');
+      return;
+    }
+
     try {
-      
-      const response = await api.post(`/visit/create?email=${email}`, novaVisita);
+      const response = await api.post('/visit/create', novaVisita, {
+        params: { email },
+      });
 
-      console.log('Resposta API:', response.data);
-
-      // SALVA LOCALMENTE
-      const dados = await AsyncStorage.getItem(STORAGE_KEY);
-
-      const listaAtual: Visita[] = dados
-        ? JSON.parse(dados)
-        : [];
-
-      const novaLista = [...listaAtual, response.data];
-
-      await AsyncStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(novaLista)
-      );
-
-      setVisitas(novaLista);
+      const novasVisitas = [...visitas, response.data];
+      setVisitas(novasVisitas);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(novasVisitas));
 
       // LIMPA CAMPOS
       setNomeLocal('');
@@ -209,9 +223,8 @@ export default function CadastroVisitaScreen() {
       setMarcadorTemp(null);
 
       Alert.alert('Sucesso', 'Visita cadastrada!');
-    } catch (error) {
-      console.log(error);
-
+    } catch (error: any) {
+      console.log('Erro ao cadastrar visita:', error.response?.data || error.message || error);
       Alert.alert('Erro', 'Falha ao cadastrar visita');
     }
   }
@@ -369,50 +382,47 @@ export default function CadastroVisitaScreen() {
             Visitas Cadastradas
           </ThemedText>
 
-          <FlatList
-            data={visitas}
-            keyExtractor={(item) =>
-              item.id?.toString() || Math.random().toString()
-            }
-            renderItem={({ item }) => (
-              <ThemedView style={styles.visitaCard}>
-                {item.uriImagem && (
-                  <Image
-                    source={{ uri: item.uriImagem }}
-                    style={styles.cardImage}
-                  />
-                )}
+          {visitas.map((item, index) => (
+            <ThemedView
+              key={item.id?.toString() || index.toString()}
+              style={styles.visitaCard}
+            >
+              {item.uriImagem && (
+                <Image
+                  source={{ uri: item.uriImagem }}
+                  style={styles.cardImage}
+                />
+              )}
 
-                <ThemedText style={styles.textCard}>
-                  Local: {item.localName}
-                </ThemedText>
+              <ThemedText style={styles.textCard}>
+                Local: {item.localName}
+              </ThemedText>
 
-                <ThemedText style={styles.textCard}>
-                  Observação:{' '}
-                  {item.observation || 'Nenhuma'}
-                </ThemedText>
+              <ThemedText style={styles.textCard}>
+                Observação:{' '}
+                {item.observation || 'Nenhuma'}
+              </ThemedText>
 
-                <ThemedText style={styles.textCard}>
-                  Usuário: {item.userEmail || 'Desconhecido'}
-                </ThemedText>
+              <ThemedText style={styles.textCard}>
+                Usuário: {item.userEmail || item.user?.email || 'Desconhecido'}
+              </ThemedText>
 
-                <Pressable
-                  onPress={() =>
-                    item.id && removerVisita(item.id)
-                  }
+              <Pressable
+                onPress={() =>
+                  item.id && removerVisita(item.id)
+                }
+              >
+                <ThemedText
+                  style={{
+                    color: 'red',
+                    marginTop: 6,
+                  }}
                 >
-                  <ThemedText
-                    style={{
-                      color: 'red',
-                      marginTop: 6,
-                    }}
-                  >
-                    Excluir
-                  </ThemedText>
-                </Pressable>
-              </ThemedView>
-            )}
-          />
+                  Excluir
+                </ThemedText>
+              </Pressable>
+            </ThemedView>
+          ))}
         </ThemedView>
       )}
 

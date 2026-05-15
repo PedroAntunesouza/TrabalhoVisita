@@ -4,10 +4,11 @@ import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Fonts } from '@/constants/theme';
 import { useAuth } from '@/context/auth-context';
+import api from '@/service/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 type Visita = {
   id: number;
@@ -41,21 +42,37 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       async function carregarVisitas() {
+        if (!email) {
+          setVisitas([]);
+          return;
+        }
+
         try {
-          const dados = await AsyncStorage.getItem(STORAGE_KEY);
-          if (dados) {
-            setVisitas(JSON.parse(dados));
-          } else {
+          const response = await api.get('/visit/list', {
+            params: { email },
+          });
+
+          const visitasCarregadas = response.data || [];
+          setVisitas(visitasCarregadas);
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(visitasCarregadas));
+        } catch (error: any) {
+          console.log('Erro ao carregar visitas:', error.response?.data || error.message || error);
+
+          try {
+            const dados = await AsyncStorage.getItem(STORAGE_KEY);
+            if (dados) {
+              setVisitas(JSON.parse(dados));
+            } else {
+              setVisitas([]);
+            }
+          } catch {
             setVisitas([]);
           }
-        } catch {
-          console.log('Erro ao carregar visitas');
-          setVisitas([]);
         }
       }
 
       carregarVisitas();
-    }, [])
+    }, [email])
   );
 
   return (
@@ -85,42 +102,40 @@ export default function HomeScreen() {
         </ThemedText>
       </ThemedView>
 
-      <FlatList
-        data={visitas}
-        keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
-        scrollEnabled={false}
-        renderItem={({ item }) => (
-          <ThemedView style={styles.visitaCard}>
-            {item.uriImagem && (
-              <Image
-                source={{ uri: item.uriImagem }}
-                style={styles.imagem}
-                resizeMode="cover"
-              />
-            )}
+      {visitas.map((item) => (
+        <ThemedView
+          key={item.id?.toString() || Math.random().toString()}
+          style={styles.visitaCard}
+        >
+          {item.uriImagem && (
+            <Image
+              source={{ uri: item.uriImagem }}
+              style={styles.imagem}
+              resizeMode="cover"
+            />
+          )}
 
+          <ThemedText style={styles.textCard}>
+            Local: {item.localName}
+          </ThemedText>
+
+          <ThemedText style={styles.textCard}>
+            Observação: {item.observation ? item.observation : 'Nenhuma'}
+          </ThemedText>
+
+          {item.latitude != null && item.longitude != null && (
             <ThemedText style={styles.textCard}>
-              Local: {item.localName}
+              Coordenadas: {item.latitude.toFixed(5)}, {item.longitude.toFixed(5)}
             </ThemedText>
+          )}
 
+          {item.date && (
             <ThemedText style={styles.textCard}>
-              Observação: {item.observation ? item.observation : 'Nenhuma'}
+              Registrado em: {formatarData(item.date)}
             </ThemedText>
-
-            {item.latitude != null && item.longitude != null && (
-              <ThemedText style={styles.textCard}>
-                Coordenadas: {item.latitude.toFixed(5)}, {item.longitude.toFixed(5)}
-              </ThemedText>
-            )}
-
-            {item.date && (
-              <ThemedText style={styles.textCard}>
-                Registrado em: {formatarData(item.date)}
-              </ThemedText>
-            )}
-          </ThemedView>
-        )}
-      />
+          )}
+        </ThemedView>
+      ))}
 
       <View style={{ height: 100 }} />
     </ParallaxScrollView>
