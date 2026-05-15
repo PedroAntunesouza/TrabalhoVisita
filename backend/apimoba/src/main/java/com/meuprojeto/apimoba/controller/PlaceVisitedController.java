@@ -32,4 +32,15 @@ public class PlaceVisitedController {
     public ResponseEntity<List<PlaceVisited>> listByEmail(@RequestParam String email) {
         return ResponseEntity.ok(service.findByEmail(email));
     }
+
+    @PutMapping("/update/{id}")
+    public ResponseEntity<PlaceVisited> update(@PathVariable Long id, @RequestBody PlaceVisited placeVisited) {
+        return ResponseEntity.ok(service.updateVisit(id, placeVisited));
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        service.deleteVisit(id);
+        return ResponseEntity.noContent().build();
+    }
 }

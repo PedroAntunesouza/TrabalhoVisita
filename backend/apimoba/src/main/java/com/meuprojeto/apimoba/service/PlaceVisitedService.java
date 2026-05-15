@@ -44,4 +44,23 @@ public class PlaceVisitedService {
     public List<PlaceVisited> findByEmail(String email) {
         return repository.findByUserEmail(email);
     }
+
+    public PlaceVisited updateVisit(Long id, PlaceVisited data) {
+        PlaceVisited existing = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Visita não encontrada"));
+
+        if (data.getLocalName() != null) existing.setLocalName(data.getLocalName());
+        if (data.getObservation() != null) existing.setObservation(data.getObservation());
+        if (data.getLatitude() != 0) existing.setLatitude(data.getLatitude());
+        if (data.getLongitude() != 0) existing.setLongitude(data.getLongitude());
+        if (data.getUriImagem() != null) existing.setUriImagem(data.getUriImagem());
+
+        // A data (LocalDateTime date) NÃO é alterada, mantendo o registro original.
+
+        return repository.save(existing);
+    }
+
+    public void deleteVisit(Long id) {
+        repository.deleteById(id);
+    }
 }

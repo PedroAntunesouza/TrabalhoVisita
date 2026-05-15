@@ -73,6 +73,15 @@ export default function CadastroVisitaScreen() {
 
   const cameraRef = useRef<any>(null);
 
+  // Estados para Edição
+  const [modalEdicaoVisivel, setModalEdicaoVisivel] = useState(false);
+  const [visitaSendoEditada, setVisitaSendoEditada] = useState<Visita | null>(null);
+  const [nomeLocalEdit, setNomeLocalEdit] = useState('');
+  const [observacaoEdit, setObservacaoEdit] = useState('');
+  const [imagemEdit, setImagemEdit] = useState<string | null>(null);
+  const [coordenadasEdit, setCoordenadasEdit] = useState<Coordenadas | null>(null);
+  const [targetState, setTargetState] = useState<'create' | 'edit'>('create');
+
   useFocusEffect(
     useCallback(() => {
       async function carregar() {
@@ -126,7 +135,13 @@ export default function CadastroVisitaScreen() {
     } catch {
       // Falha ao obter localização
     }
-    setMarcadorTemp(coordenadas);
+    
+    if (targetState === 'create') {
+      setMarcadorTemp(coordenadas);
+    } else {
+      setMarcadorTemp(coordenadasEdit);
+    }
+    
     setMapaVisivel(true);
   }
 
@@ -134,13 +149,16 @@ export default function CadastroVisitaScreen() {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setMarcadorTemp({ latitude, longitude });
   }
-
   function confirmarLocalizacao() {
     if (!marcadorTemp) {
       Alert.alert('Atenção', 'Toque no mapa para marcar o local');
       return;
     }
-    setCoordenadas(marcadorTemp);
+    if (targetState === 'create') {
+      setCoordenadas(marcadorTemp);
+    } else {
+      setCoordenadasEdit(marcadorTemp);
+    }
     setMapaVisivel(false);
   }
 
@@ -169,9 +187,11 @@ export default function CadastroVisitaScreen() {
   async function capturarFoto() {
     if (cameraRef.current) {
       const result = await cameraRef.current.takePictureAsync();
-
-      setImagem(result.uri);
-
+      if (targetState === 'create') {
+        setImagem(result.uri);
+      } else {
+        setImagemEdit(result.uri);
+      }
       setIsCameraActive(false);
     }
   }
@@ -230,16 +250,69 @@ export default function CadastroVisitaScreen() {
   }
 
   async function removerVisita(id: number) {
-    const novaLista = visitas.filter(
-      (item) => item.id !== id
+    Alert.alert(
+      'Confirmar Exclusão',
+      'Tem certeza que deseja excluir esta visita?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.delete(`/visit/delete/${id}`);
+              const novaLista = visitas.filter((item) => item.id !== id);
+              setVisitas(novaLista);
+              await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(novaLista));
+            } catch (error) {
+              console.log('Erro ao excluir:', error);
+              Alert.alert('Erro', 'Falha ao excluir visita do servidor');
+            }
+          },
+        },
+      ]
     );
+  }
 
-    setVisitas(novaLista);
+  function abrirEdicao(visita: Visita) {
+    setVisitaSendoEditada(visita);
+    setNomeLocalEdit(visita.localName);
+    setObservacaoEdit(visita.observation);
+    setImagemEdit(visita.uriImagem);
+    setCoordenadasEdit({ latitude: visita.latitude, longitude: visita.longitude });
+    setTargetState('edit');
+    setModalEdicaoVisivel(true);
+  }
 
-    await AsyncStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(novaLista)
-    );
+  async function salvarEdicao() {
+    if (!visitaSendoEditada?.id) return;
+
+    if (!nomeLocalEdit.trim()) {
+      Alert.alert('Erro', 'Preencha o nome do local');
+      return;
+    }
+
+    const data = {
+      localName: nomeLocalEdit,
+      observation: observacaoEdit,
+      uriImagem: imagemEdit,
+      latitude: coordenadasEdit?.latitude,
+      longitude: coordenadasEdit?.longitude,
+    };
+
+    try {
+      const response = await api.put(`/visit/update/${visitaSendoEditada.id}`, data);
+      
+      const novasVisitas = visitas.map(v => v.id === visitaSendoEditada.id ? response.data : v);
+      setVisitas(novasVisitas);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(novasVisitas));
+      
+      setModalEdicaoVisivel(false);
+      Alert.alert('Sucesso', 'Visita atualizada!');
+    } catch (error) {
+      console.log('Erro ao atualizar:', error);
+      Alert.alert('Erro', 'Falha ao atualizar visita');
+    }
   }
 
   if (isCameraActive) {
@@ -323,7 +396,10 @@ export default function CadastroVisitaScreen() {
                 styles.imageButton,
                 { flex: 1, marginRight: 5 },
               ]}
-              onPress={abrirCamera}
+              onPress={() => {
+                setTargetState('create');
+                abrirCamera();
+              }}
             >
               <ThemedText style={styles.imageButtonText}>
                 Tirar Foto
@@ -339,7 +415,10 @@ export default function CadastroVisitaScreen() {
                   backgroundColor: '#4CAF50',
                 },
               ]}
-              onPress={abrirMapa}
+              onPress={() => {
+                setTargetState('create');
+                abrirMapa();
+              }}
             >
               <ThemedText style={styles.imageButtonText}>
                 Ver Mapa
@@ -407,20 +486,24 @@ export default function CadastroVisitaScreen() {
                 Usuário: {item.userEmail || item.user?.email || 'Desconhecido'}
               </ThemedText>
 
-              <Pressable
-                onPress={() =>
-                  item.id && removerVisita(item.id)
-                }
-              >
-                <ThemedText
-                  style={{
-                    color: 'red',
-                    marginTop: 6,
-                  }}
+              <View style={{ flexDirection: 'row', marginTop: 10 }}>
+                <Pressable
+                  style={{ marginRight: 20 }}
+                  onPress={() => abrirEdicao(item)}
                 >
-                  Excluir
-                </ThemedText>
-              </Pressable>
+                  <ThemedText style={{ color: '#007AFF', fontWeight: 'bold' }}>
+                    Editar
+                  </ThemedText>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => item.id && removerVisita(item.id)}
+                >
+                  <ThemedText style={{ color: 'red', fontWeight: 'bold' }}>
+                    Excluir
+                  </ThemedText>
+                </Pressable>
+              </View>
             </ThemedView>
           ))}
         </ThemedView>
@@ -464,6 +547,101 @@ export default function CadastroVisitaScreen() {
             </Pressable>
           </View>
         </View>
+      </Modal>
+
+      {/* Modal de Edição */}
+      <Modal
+        visible={modalEdicaoVisivel}
+        animationType="slide"
+        transparent={false}
+      >
+        <ParallaxScrollView
+          headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
+          headerImage={
+            <IconSymbol
+              size={310}
+              color="#808080"
+              name="gearshape.fill"
+              style={styles.headerImage}
+            />
+          }
+        >
+          <ThemedView style={styles.formContainer}>
+            <ThemedText style={styles.formTitle}>Editar Visita</ThemedText>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Nome do local"
+              value={nomeLocalEdit}
+              onChangeText={setNomeLocalEdit}
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Observação"
+              value={observacaoEdit}
+              onChangeText={setObservacaoEdit}
+            />
+
+            <View style={styles.rowButtons}>
+              <Pressable
+                style={[styles.imageButton, { flex: 1, marginRight: 5 }]}
+                onPress={() => {
+                  setTargetState('edit');
+                  abrirCamera();
+                }}
+              >
+                <ThemedText style={styles.imageButtonText}>Tirar Foto</ThemedText>
+              </Pressable>
+
+              <Pressable
+                style={[styles.imageButton, { flex: 1, marginLeft: 5, backgroundColor: '#4CAF50' }]}
+                onPress={() => {
+                  setTargetState('edit');
+                  abrirMapa();
+                }}
+              >
+                <ThemedText style={styles.imageButtonText}>Ver Mapa</ThemedText>
+              </Pressable>
+            </View>
+
+            {imagemEdit && (
+              <ThemedView style={styles.cardPrevia}>
+                <ThemedText style={styles.cardPreviaTitulo}>Foto capturada</ThemedText>
+                <Image source={{ uri: imagemEdit }} style={styles.previewImage} />
+              </ThemedView>
+            )}
+
+            {coordenadasEdit && (
+              <ThemedView style={styles.cardPrevia}>
+                <ThemedText style={styles.cardPreviaTitulo}>Local marcado</ThemedText>
+                <ThemedText style={{ color: 'gray' }}>
+                  Latitude: {coordenadasEdit.latitude.toFixed(6)}
+                </ThemedText>
+                <ThemedText style={{ color: 'gray' }}>
+                  Longitude: {coordenadasEdit.longitude.toFixed(6)}
+                </ThemedText>
+              </ThemedView>
+            )}
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+              <Pressable
+                style={[styles.imageButton, { flex: 1, marginRight: 5, backgroundColor: '#FF3B30' }]}
+                onPress={() => setModalEdicaoVisivel(false)}
+              >
+                <ThemedText style={styles.imageButtonText}>Cancelar</ThemedText>
+              </Pressable>
+
+              <Pressable
+                style={[styles.imageButton, { flex: 1, marginLeft: 5, backgroundColor: '#34C759' }]}
+                onPress={salvarEdicao}
+              >
+                <ThemedText style={styles.imageButtonText}>Salvar Alterações</ThemedText>
+              </Pressable>
+            </View>
+          </ThemedView>
+          <View style={{ height: 100 }} />
+        </ParallaxScrollView>
       </Modal>
 
       <View style={{ height: 80 }} />
