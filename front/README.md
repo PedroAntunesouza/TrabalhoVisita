@@ -1,50 +1,125 @@
-# Welcome to your Expo app 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+# TrabalhoVisita 📍
 
-## Get started
+Aplicativo mobile para registro e gerenciamento de visitas com backend em Spring Boot.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## 🛠️ BACKEND (Java/Spring Boot)
 
-2. Start the app
+### Requisitos
+- Java 21+
+- MySQL 8.0+
 
-   ```bash
-   npx expo start
-   ```
+### Setup Rápido
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+1. **Criar banco de dados:**
+```sql
+CREATE DATABASE trabalho_visita;
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. **Configurar conexão** em `backend/apimoba/src/main/resources/application.properties`:
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/trabalho_visita
+spring.datasource.username=root
+spring.datasource.password=sua_senha
+```
 
-## Learn more
+3. **Executar:**
+```bash
+cd backend/apimoba
+./mvnw spring-boot:run
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+API estará em: **http://localhost:8081**
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### Endpoints Principais
+- `POST /user/login` - Login
+- `POST /user/create` - Registrar usuário
+- `GET /visit/returnAll` - Todas as visitas
+- `GET /visit/list?email=user@email.com` - Visitas do usuário
+- `POST /visit/create` - Criar visita
+- `PUT /visit/update/{id}` - Atualizar visita
+- `DELETE /visit/delete/{id}` - Deletar visita
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
+## 📱 FRONTEND (React Native/Expo)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### Requisitos
+- Node.js 18+
+- npm 9+
+- Expo CLI
+
+### Setup Rápido
+
+1. **Instalar dependências:**
+```bash
+cd front
+npm install
+```
+
+2. **Configurar IP do servidor** em `service/api.js`:
+```javascript
+baseURL: "http://192.168.0.179:8081"  // Altere para seu IP
+```
+
+3. **Executar:**
+```bash
+npm start        # Expo
+npm run android  # Android
+npm run ios      # iOS
+npm run web      # Web
+```
+
+### Dependências Principais
+- `axios` - Requisições HTTP
+- `expo-camera` - Câmera
+- `expo-location` - GPS
+- `react-native-maps` - Mapas
+- `@react-native-async-storage/async-storage` - Cache local
+
+---
+
+## ⚡ Fluxo de Funcionamento
+
+1. Usuário faz login no app
+2. App carrega todas as visitas (`/visit/returnAll`)
+3. Usuário pode registrar nova visita (câmera + localização)
+4. Dados são enviados para o backend
+5. Backend salva no MySQL
+6. App exibe a visita com nome do usuário que registrou
+
+---
+
+## 🚨 Troubleshooting
+
+**Backend não conecta:**
+- Verifique se MySQL está rodando
+- Confirme credenciais em `application.properties`
+
+**Frontend não conecta à API:**
+- Verifique o IP em `service/api.js`
+- Confirme que ambas as máquinas estão na mesma rede
+- Teste: `ping 192.168.0.179`
+
+---
+
+## 📁 Estrutura
+
+```
+TrabalhoVisita/
+├── backend/apimoba/          # API Spring Boot
+│   ├── src/main/java/...     # Controllers, Services, Entities
+│   └── pom.xml               # Dependências Maven
+├── front/                     # App React Native
+│   ├── app/                   # Telas e rotas
+│   ├── components/            # Componentes reutilizáveis
+│   ├── service/api.js         # Configuração Axios
+│   └── package.json           # Dependências npm
+└── README.md                  # Este arquivo
+```
+
+---
+
+**Desenvolvido para fins educacionais** 
