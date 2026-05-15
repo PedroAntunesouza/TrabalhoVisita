@@ -1,11 +1,11 @@
-import ParallaxScrollView from "@/components/parallax-scroll-view";
+import { Fonts } from "@/constants/theme";
 import api from "@/service/api";
 import { useAuth } from "@/context/auth-context";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
-import AntDesign from "@expo/vector-icons/AntDesign";
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import {
   Alert,
   Pressable,
@@ -53,28 +53,25 @@ export default function CadastroUsuarioScreen() {
   };
 
   return (
-    <ParallaxScrollView
-      headerImage={
-        <Image
-          source={require("@/assets/images/partial-react-logo.png")}
-          style={styles.logo}
-        />
-      }
-      headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
-    >
-      <Text style={styles.texto}>Cadastro de usuário</Text>
+    <View style={styles.mainContainer}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Criar Conta</Text>
+        <Text style={styles.subtitle}>Preencha os dados abaixo</Text>
+      </View>
 
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Digite seu nome"
+          placeholder="Nome completo"
+          placeholderTextColor="#8E8E93"
           value={name}
           onChangeText={setName}
         />
 
         <TextInput
           style={styles.input}
-          placeholder="Digite seu email"
+          placeholder="Email"
+          placeholderTextColor="#8E8E93"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -84,7 +81,8 @@ export default function CadastroUsuarioScreen() {
         <View style={styles.passwordContainer}>
           <TextInput
             style={[styles.input, styles.passwordInput]}
-            placeholder="Digite sua senha"
+            placeholder="Senha"
+            placeholderTextColor="#8E8E93"
             value={senha}
             onChangeText={setSenha}
             secureTextEntry={!showSenha}
@@ -94,86 +92,114 @@ export default function CadastroUsuarioScreen() {
             onPress={() => setShowSenha((v) => !v)}
             style={styles.revealButton}
           >
-            <AntDesign
-              name={showSenha ? "eye-invisible" : "eye"}
+            <IconSymbol
+              name={showSenha ? 'eye.slash' : 'eye'}
               size={22}
-              color="#007AFF"
+              color="#0055FF"
             />
           </Pressable>
         </View>
 
-        <Pressable style={styles.botao} onPress={realizarCadastro}>
-          <Text style={styles.botaoTexto}>Cadastrar</Text>
+        <Pressable style={styles.registerButton} onPress={realizarCadastro}>
+          <Text style={styles.registerButtonText}>Cadastrar</Text>
         </Pressable>
 
-        <Pressable onPress={() => router.replace("/login")}>
-          <Text style={styles.link}>Já tem um cadastro? Faça o Login!</Text>
+        <Pressable onPress={() => router.replace('/login')} style={styles.linkButton}>
+          <Text style={styles.linkText}>
+            Já tem uma conta? <Text style={{ color: '#0055FF', fontWeight: '800' }}>Faça login</Text>
+          </Text>
         </Pressable>
       </View>
 
-      <StatusBar style="auto" />
-    </ParallaxScrollView>
+      <StatusBar style="dark" />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  logo: {
-    marginTop: 70,
-    height: 180,
-    width: 290,
+  mainContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+    padding: 24,
+    justifyContent: 'center',
   },
-  texto: {
-    fontSize: 20,
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 16,
+
+  header: {
+    marginBottom: 40,
   },
+
+  title: {
+    fontSize: 34,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+
+  subtitle: {
+    fontSize: 16,
+    color: '#8E8E93',
+    marginTop: 8,
+  },
+
   formContainer: {
-    width: "80%",
-    alignSelf: "center",
-    alignItems: "center",
-    gap: 12,
+    width: '100%',
+    gap: 16,
   },
+
   input: {
-    width: "100%",
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 14,
+    padding: 18,
+    fontSize: 16,
+    color: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  botao: {
-    width: "100%",
-    backgroundColor: "#007AFF",
-    padding: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  botaoTexto: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  link: {
-    marginTop: 10,
-    color: "#007AFF",
-    fontWeight: "600",
-  },
+
   passwordContainer: {
-    width: "100%",
-    position: "relative",
-    justifyContent: "center",
+    width: '100%',
+    position: 'relative',
   },
+
   passwordInput: {
-    paddingRight: 45,
+    paddingRight: 55,
   },
+
   revealButton: {
-    position: "absolute",
-    right: 10,
-    height: "100%",
-    justifyContent: "center",
+    position: 'absolute',
+    right: 18,
+    height: '100%',
+    justifyContent: 'center',
+  },
+
+  registerButton: {
+    backgroundColor: '#0055FF',
+    padding: 18,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 10,
+    shadowColor: '#0055FF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+
+  registerButtonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+
+  linkButton: {
+    marginTop: 12,
+    alignItems: 'center',
+  },
+
+  linkText: {
+    fontSize: 14,
+    color: '#8E8E93',
   },
 });

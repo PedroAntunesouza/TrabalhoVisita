@@ -12,7 +12,7 @@ import { ThemedView } from '@/components/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
-const HEADER_HEIGHT = 250;
+const HEADER_HEIGHT = 140;
 
 type Props = PropsWithChildren<{
   headerImage: ReactElement;
@@ -80,7 +80,7 @@ export default function ParallaxScrollView({
   return (
     <Animated.ScrollView
       ref={scrollRef}
-      style={{ backgroundColor, flex: 1 }}
+      style={{ backgroundColor: '#121212', flex: 1 }}
       scrollEventThrottle={16}
       // prevent endless bouncing/overscroll at bottom
       bounces={false}
@@ -97,7 +97,7 @@ export default function ParallaxScrollView({
         ]}>
         {headerImage}
       </Animated.View>
-      <ThemedView style={styles.content}>{children}</ThemedView>
+      <ThemedView style={[styles.content, { backgroundColor: '#121212' }]}>{children}</ThemedView>
     </Animated.ScrollView>
   );
 }
@@ -112,8 +112,8 @@ const styles = StyleSheet.create({
   },
   content: {
     // flex:1 removed to avoid forcing extra height inside ScrollView
-    padding: 32,
-    gap: 16,
+    padding: 20,
+    gap: 12,
     overflow: 'hidden',
   },
 });

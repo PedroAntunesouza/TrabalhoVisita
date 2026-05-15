@@ -18,10 +18,15 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.right': 'chevron-right',
   'chevron.left': 'chevron-left',
-  'mappin.circle.fill': 'add-location',
+  'mappin.circle.fill': 'location-on',
+  'mappin.and.ellipse': 'place',
   'gearshape.fill': 'settings',
   'camera.fill': 'camera-alt',
   'map.fill': 'map',
+  'doc.text.magnifyingglass': 'search',
+  'rectangle.portrait.and.arrow.right': 'logout',
+  'eye': 'visibility',
+  'eye.slash': 'visibility-off',
 } as IconMapping;
 
 /**

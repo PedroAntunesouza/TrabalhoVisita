@@ -37,6 +37,7 @@ interface Visita {
   user?: {
     email?: string;
   };
+  date?: string;
 }
 
 interface Coordenadas {
@@ -45,6 +46,16 @@ interface Coordenadas {
 }
 
 const STORAGE_KEY = '@visitas';
+
+const formatarData = (dataStr?: string) => {
+  if (!dataStr) return 'Data não disponível';
+  try {
+    const data = new Date(dataStr);
+    return data.toLocaleString('pt-BR');
+  } catch (e) {
+    return 'Data inválida';
+  }
+};
 
 export default function CadastroVisitaScreen() {
   const { email } = useAuth();
@@ -342,26 +353,16 @@ export default function CadastroVisitaScreen() {
   return (
     <ParallaxScrollView
       headerBackgroundColor={{
-        light: '#D0D0D0',
-        dark: '#353636',
+        light: '#F2F2F7',
+        dark: '#F2F2F7',
       }}
       headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="gearshape.fill"
-          style={styles.headerImage}
-        />
+        <View style={styles.headerContent}>
+          <ThemedText style={styles.headerTitle}>Nova Visita</ThemedText>
+        </View>
       }
     >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{ fontFamily: Fonts.rounded }}
-        >
-          Olá {email}
-        </ThemedText>
-      </ThemedView>
+      <ThemedView style={styles.container}>
 
       <KeyboardAvoidingView
         behavior={
@@ -379,79 +380,73 @@ export default function CadastroVisitaScreen() {
           <TextInput
             style={styles.input}
             placeholder="Nome do local"
+            placeholderTextColor="#8E8E93"
             value={nomeLocal}
             onChangeText={setNomeLocal}
           />
 
           <TextInput
-            style={styles.input}
+            style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
             placeholder="Observação"
+            placeholderTextColor="#8E8E93"
+            multiline
             value={observacao}
             onChangeText={setObservacao}
           />
 
           <View style={styles.rowButtons}>
             <Pressable
-              style={[
-                styles.imageButton,
-                { flex: 1, marginRight: 5 },
-              ]}
+              style={[styles.actionButton, { backgroundColor: '#F2F2F7' }]}
               onPress={() => {
                 setTargetState('create');
                 abrirCamera();
               }}
             >
-              <ThemedText style={styles.imageButtonText}>
-                Tirar Foto
+              <IconSymbol name="camera.fill" size={20} color="#0055FF" />
+              <ThemedText style={[styles.actionButtonText, { color: '#0055FF' }]}>
+                Foto
               </ThemedText>
             </Pressable>
 
             <Pressable
-              style={[
-                styles.imageButton,
-                {
-                  flex: 1,
-                  marginLeft: 5,
-                  backgroundColor: '#4CAF50',
-                },
-              ]}
+              style={[styles.actionButton, { backgroundColor: '#F2F2F7' }]}
               onPress={() => {
                 setTargetState('create');
                 abrirMapa();
               }}
             >
-              <ThemedText style={styles.imageButtonText}>
-                Ver Mapa
+              <IconSymbol name="mappin.and.ellipse" size={20} color="#0055FF" />
+              <ThemedText style={[styles.actionButtonText, { color: '#0055FF' }]}>
+                Local
               </ThemedText>
             </Pressable>
           </View>
 
-          {imagem && (
-            <ThemedView style={styles.cardPrevia}>
-              <ThemedText style={styles.cardPreviaTitulo}>Foto capturada</ThemedText>
-              <Image
-                source={{ uri: imagem }}
-                style={styles.previewImage}
-              />
-            </ThemedView>
+          {(imagem || coordenadas) && (
+            <View style={styles.previaContainer}>
+              {imagem && (
+                <View style={styles.miniCard}>
+                  <Image source={{ uri: imagem }} style={styles.miniImage} />
+                  <ThemedText style={styles.miniText}>Foto OK</ThemedText>
+                </View>
+              )}
+                {coordenadas && (
+                  <View style={styles.miniCard}>
+                    <IconSymbol name="mappin.circle.fill" size={24} color="#34C759" />
+                    <View>
+                      <ThemedText style={[styles.miniText, { fontWeight: '700' }]}>Localização</ThemedText>
+                      <ThemedText style={{ fontSize: 10, color: '#8E8E93' }}>
+                        Lat: {coordenadas.latitude.toFixed(4)} Lng: {coordenadas.longitude.toFixed(4)}
+                      </ThemedText>
+                    </View>
+                  </View>
+                )}
+            </View>
           )}
 
-          {coordenadas && (
-            <ThemedView style={styles.cardPrevia}>
-              <ThemedText style={styles.cardPreviaTitulo}>Local marcado</ThemedText>
-              <ThemedText style={{ color: 'gray' }}>
-                Latitude: {coordenadas.latitude.toFixed(6)}
-              </ThemedText>
-              <ThemedText style={{ color: 'gray' }}>
-                Longitude: {coordenadas.longitude.toFixed(6)}
-              </ThemedText>
-            </ThemedView>
-          )}
-
-          <Button
-            title="Cadastrar Visita"
-            onPress={adicionarVisita}
-          />
+          <Pressable style={styles.submitButton} onPress={adicionarVisita}>
+            <ThemedText style={styles.submitButtonText}>Salvar Visita</ThemedText>
+          </Pressable>
         </ThemedView>
       </KeyboardAvoidingView>
 
@@ -462,49 +457,57 @@ export default function CadastroVisitaScreen() {
           </ThemedText>
 
           {visitas.map((item, index) => (
-            <ThemedView
+            <View
               key={item.id?.toString() || index.toString()}
-              style={styles.visitaCard}
+              style={styles.modernCard}
             >
               {item.uriImagem && (
                 <Image
                   source={{ uri: item.uriImagem }}
-                  style={styles.cardImage}
+                  style={styles.cardImageModern}
                 />
               )}
 
-              <ThemedText style={styles.textCard}>
-                Local: {item.localName}
-              </ThemedText>
+              <View style={styles.cardContentModern}>
+                <ThemedText style={styles.cardTitleModern}>
+                  {item.localName}
+                </ThemedText>
+                
+                <ThemedText style={styles.cardSubTitleModern} numberOfLines={1}>
+                  {item.observation || 'Sem observações'}
+                </ThemedText>
 
-              <ThemedText style={styles.textCard}>
-                Observação:{' '}
-                {item.observation || 'Nenhuma'}
-              </ThemedText>
-
-              <ThemedText style={styles.textCard}>
-                Usuário: {item.userEmail || item.user?.email || 'Desconhecido'}
-              </ThemedText>
-
-              <View style={{ flexDirection: 'row', marginTop: 10 }}>
-                <Pressable
-                  style={{ marginRight: 20 }}
-                  onPress={() => abrirEdicao(item)}
-                >
-                  <ThemedText style={{ color: '#007AFF', fontWeight: 'bold' }}>
-                    Editar
+                <ThemedText style={{ fontSize: 11, color: '#8E8E93', marginTop: 4 }}>
+                  Local: {item.latitude?.toFixed(5)}, {item.longitude?.toFixed(5)}
+                </ThemedText>
+                
+                {item.date && (
+                  <ThemedText style={{ fontSize: 10, color: '#8E8E93', marginTop: 2 }}>
+                    Data: {formatarData(item.date)}
                   </ThemedText>
-                </Pressable>
+                )}
 
-                <Pressable
-                  onPress={() => item.id && removerVisita(item.id)}
-                >
-                  <ThemedText style={{ color: 'red', fontWeight: 'bold' }}>
-                    Excluir
-                  </ThemedText>
-                </Pressable>
+                <View style={styles.cardActionsModern}>
+                  <Pressable
+                    style={styles.miniActionButton}
+                    onPress={() => abrirEdicao(item)}
+                  >
+                    <ThemedText style={{ color: '#0055FF', fontSize: 13, fontWeight: 'bold' }}>
+                      Editar
+                    </ThemedText>
+                  </Pressable>
+
+                  <Pressable
+                    style={styles.miniActionButton}
+                    onPress={() => item.id && removerVisita(item.id)}
+                  >
+                    <ThemedText style={{ color: '#FF3B30', fontSize: 13, fontWeight: 'bold' }}>
+                      Excluir
+                    </ThemedText>
+                  </Pressable>
+                </View>
               </View>
-            </ThemedView>
+            </View>
           ))}
         </ThemedView>
       )}
@@ -556,299 +559,348 @@ export default function CadastroVisitaScreen() {
         transparent={false}
       >
         <ParallaxScrollView
-          headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
+          headerBackgroundColor={{ light: '#F2F2F7', dark: '#F2F2F7' }}
           headerImage={
-            <IconSymbol
-              size={310}
-              color="#808080"
-              name="gearshape.fill"
-              style={styles.headerImage}
-            />
+            <View style={styles.headerContent}>
+              <ThemedText style={styles.headerTitle}>Editar Visita</ThemedText>
+            </View>
           }
         >
           <ThemedView style={styles.formContainer}>
-            <ThemedText style={styles.formTitle}>Editar Visita</ThemedText>
 
             <TextInput
               style={styles.input}
               placeholder="Nome do local"
+              placeholderTextColor="#8E8E93"
               value={nomeLocalEdit}
               onChangeText={setNomeLocalEdit}
             />
 
             <TextInput
-              style={styles.input}
+              style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
               placeholder="Observação"
+              placeholderTextColor="#8E8E93"
+              multiline
               value={observacaoEdit}
               onChangeText={setObservacaoEdit}
             />
 
             <View style={styles.rowButtons}>
               <Pressable
-                style={[styles.imageButton, { flex: 1, marginRight: 5 }]}
+                style={[styles.actionButton, { backgroundColor: '#F2F2F7' }]}
                 onPress={() => {
                   setTargetState('edit');
                   abrirCamera();
                 }}
               >
-                <ThemedText style={styles.imageButtonText}>Tirar Foto</ThemedText>
+                <IconSymbol name="camera.fill" size={20} color="#0055FF" />
+                <ThemedText style={[styles.actionButtonText, { color: '#0055FF' }]}>Foto</ThemedText>
               </Pressable>
 
               <Pressable
-                style={[styles.imageButton, { flex: 1, marginLeft: 5, backgroundColor: '#4CAF50' }]}
+                style={[styles.actionButton, { backgroundColor: '#F2F2F7' }]}
                 onPress={() => {
                   setTargetState('edit');
                   abrirMapa();
                 }}
               >
-                <ThemedText style={styles.imageButtonText}>Ver Mapa</ThemedText>
+                <IconSymbol name="mappin.and.ellipse" size={20} color="#0055FF" />
+                <ThemedText style={[styles.actionButtonText, { color: '#0055FF' }]}>Local</ThemedText>
               </Pressable>
             </View>
 
-            {imagemEdit && (
-              <ThemedView style={styles.cardPrevia}>
-                <ThemedText style={styles.cardPreviaTitulo}>Foto capturada</ThemedText>
-                <Image source={{ uri: imagemEdit }} style={styles.previewImage} />
-              </ThemedView>
+            {(imagemEdit || coordenadasEdit) && (
+              <View style={styles.previaContainer}>
+                {imagemEdit && (
+                  <View style={styles.miniCard}>
+                    <Image source={{ uri: imagemEdit }} style={styles.miniImage} />
+                    <ThemedText style={styles.miniText}>Foto OK</ThemedText>
+                  </View>
+                )}
+                {coordenadasEdit && (
+                  <View style={styles.miniCard}>
+                    <IconSymbol name="mappin.circle.fill" size={24} color="#34C759" />
+                    <View>
+                      <ThemedText style={[styles.miniText, { fontWeight: '700' }]}>Localização</ThemedText>
+                      <ThemedText style={{ fontSize: 10, color: '#8E8E93' }}>
+                        Lat: {coordenadasEdit.latitude.toFixed(4)} Lng: {coordenadasEdit.longitude.toFixed(4)}
+                      </ThemedText>
+                    </View>
+                  </View>
+                )}
+              </View>
             )}
 
-            {coordenadasEdit && (
-              <ThemedView style={styles.cardPrevia}>
-                <ThemedText style={styles.cardPreviaTitulo}>Local marcado</ThemedText>
-                <ThemedText style={{ color: 'gray' }}>
-                  Latitude: {coordenadasEdit.latitude.toFixed(6)}
-                </ThemedText>
-                <ThemedText style={{ color: 'gray' }}>
-                  Longitude: {coordenadasEdit.longitude.toFixed(6)}
-                </ThemedText>
-              </ThemedView>
-            )}
-
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
               <Pressable
-                style={[styles.imageButton, { flex: 1, marginRight: 5, backgroundColor: '#FF3B30' }]}
+                style={[styles.miniActionButton, { flex: 1, alignItems: 'center' }]}
                 onPress={() => setModalEdicaoVisivel(false)}
               >
-                <ThemedText style={styles.imageButtonText}>Cancelar</ThemedText>
+                <ThemedText style={{ color: '#FF3B30', fontWeight: '700' }}>Cancelar</ThemedText>
               </Pressable>
 
               <Pressable
-                style={[styles.imageButton, { flex: 1, marginLeft: 5, backgroundColor: '#34C759' }]}
+                style={[styles.submitButton, { flex: 2 }]}
                 onPress={salvarEdicao}
               >
-                <ThemedText style={styles.imageButtonText}>Salvar Alterações</ThemedText>
+                <ThemedText style={styles.submitButtonText}>Salvar Alterações</ThemedText>
               </Pressable>
             </View>
           </ThemedView>
-          <View style={{ height: 100 }} />
+          <ThemedView style={{ height: 100 }} />
         </ParallaxScrollView>
       </Modal>
 
-      <View style={{ height: 80 }} />
+      <ThemedView style={{ height: 80 }} />
+        </ThemedView>
     </ParallaxScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    position: 'absolute',
-    bottom: -90,
-    left: -35,
+  container: {
+    padding: 20,
+    backgroundColor: '#121212',
   },
 
-  titleContainer: {
-    marginBottom: 20,
+  headerContent: {
+    height: 140,
+    justifyContent: 'center',
+    paddingTop: 30,
+    backgroundColor: '#0055FF',
+  },
+
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 36,
+    fontWeight: '900',
+    fontFamily: Fonts.rounded,
+    textAlign: 'center',
   },
 
   formContainer: {
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: '#121212',
+    gap: 16,
   },
 
   formTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 20,
     fontFamily: Fonts.rounded,
   },
 
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    padding: 10,
-    marginBottom: 10,
-    backgroundColor: '#f9f9f9',
-  },
-
-  imageButton: {
-    backgroundColor: '#007AFF',
-    padding: 12,
-    borderRadius: 6,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-
-  imageButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-
-  previewImage: {
-    width: '100%',
-    height: 180,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-
-  cardPrevia: {
-    backgroundColor: 'transparent',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#fff',
-    marginBottom: 10,
-  },
-
-  cardPreviaTitulo: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 6,
-  },
-
-  coordsFloatingBox: {
-    position: 'absolute',
-    top: 50,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    padding: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#fff',
-    zIndex: 10,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-
-  mapActionsContainer: {
-    position: 'absolute',
-    bottom: 40,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    paddingHorizontal: 20,
-  },
-
-  mapActionButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    minWidth: 140,
-    alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-
-  mapActionText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-
-  visitasContainer: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 14,
     padding: 16,
-  },
-
-  visitasTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    fontFamily: Fonts.rounded,
-  },
-
-  visitaCard: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+    color: '#FFFFFF',
     marginBottom: 12,
-  },
-
-  cardImage: {
-    width: '100%',
-    height: 150,
-    borderRadius: 6,
-    marginBottom: 8,
-  },
-
-  textCard: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   rowButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 10,
+    marginBottom: 20,
+  },
+
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 14,
+    borderRadius: 12,
+  },
+
+  actionButtonText: {
+    fontWeight: '600',
+    fontSize: 15,
+  },
+
+  previaContainer: {
+    flexDirection: 'column',
+    marginBottom: 20,
+  },
+
+  miniCard: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#333333',
+    width: '100%',
     marginBottom: 10,
   },
 
-  cameraContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: '#000',
+  miniImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+    marginBottom: 8,
   },
 
+  miniText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+
+  submitButton: {
+    backgroundColor: '#0055FF',
+    padding: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#0055FF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+  },
+
+  visitasContainer: {
+    marginTop: 30,
+  },
+
+  visitasTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 16,
+    fontFamily: Fonts.rounded,
+  },
+
+  modernCard: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#2C2C2E',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+
+  cardImageModern: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+  },
+
+  cardContentModern: {
+    flex: 1,
+    marginLeft: 12,
+    justifyContent: 'center',
+  },
+
+  cardTitleModern: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  cardSubTitleModern: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginTop: 2,
+  },
+
+  cardActionsModern: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+
+  miniActionButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+
+  // Estilos Câmera/Mapa
+  cameraContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
   camera: {
     flex: 1,
   },
-
   cameraBackButton: {
     position: 'absolute',
     top: 50,
     left: 20,
+    zIndex: 10,
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 10,
   },
-
   cameraButtonsContainer: {
     position: 'absolute',
-    bottom: 40,
-    alignSelf: 'center',
-    zIndex: 10,
+    bottom: 50,
+    width: '100%',
+    alignItems: 'center',
   },
-
   cameraCaptureButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#fff',
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    borderWidth: 4,
+    borderColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
-
-  mapCloseButton: {
+  coordsFloatingBox: {
     position: 'absolute',
-    bottom: 30,
-    alignSelf: 'center',
-    backgroundColor: 'white',
+    top: 50,
+    left: '25%',
+    right: '25%',
+    backgroundColor: 'rgba(30, 30, 30, 0.8)',
+    padding: 8,
     borderRadius: 8,
-    padding: 5,
+    borderWidth: 1,
+    borderColor: '#000000',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  mapActionsContainer: {
+    position: 'absolute',
+    bottom: 40,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  mapActionButton: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  mapActionText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 16,
   },
 });

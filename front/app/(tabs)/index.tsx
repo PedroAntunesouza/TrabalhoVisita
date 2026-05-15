@@ -76,137 +76,183 @@ export default function HomeScreen() {
 
   return (
     <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
+      headerBackgroundColor={{ light: '#0055FF', dark: '#0055FF' }}
       headerImage={
-        <View style={styles.headerContainer}>
+        <View style={styles.headerContent}>
           <Pressable
-            style={styles.backButton}
+            style={styles.logoutButton}
             onPress={() => router.replace('/login')}
           >
-            <ThemedText style={styles.backButtonText}>Sair</ThemedText>
+            <IconSymbol name="rectangle.portrait.and.arrow.right" size={20} color="#FFFFFF" />
+            <ThemedText style={styles.logoutText}>Sair</ThemedText>
           </Pressable>
-
-          <IconSymbol
-            size={310}
-            color="#808080"
-            name="house.fill"
-            style={styles.headerImage}
-          />
+          <ThemedText style={styles.headerTitle}>Visitas</ThemedText>
         </View>
       }
     >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title" style={{ fontFamily: Fonts.rounded, fontSize: 20 }}>
-          Visitas cadastradas
-        </ThemedText>
+      <ThemedView style={styles.container}>
+        {visitas.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <IconSymbol name="doc.text.magnifyingglass" size={64} color="#C7C7CC" />
+            <ThemedText style={styles.emptyText}>Nenhuma visita encontrada</ThemedText>
+          </View>
+        ) : (
+          visitas.map((item) => (
+            <ThemedView
+              key={item.id?.toString() || Math.random().toString()}
+              style={styles.modernCard}
+            >
+              {item.uriImagem && (
+                <Image
+                  source={{ uri: item.uriImagem }}
+                  style={styles.cardImageModern}
+                  resizeMode="cover"
+                />
+              )}
+
+              <View style={styles.cardContentModern}>
+                <ThemedText style={styles.cardTitleModern}>
+                  {item.localName}
+                </ThemedText>
+                
+                <ThemedText style={{ fontSize: 12, color: '#0055FF', fontWeight: '600', marginTop: 4 }}>
+                  Data: {formatarData(item.date)}
+                </ThemedText>
+
+                <ThemedText style={styles.cardObsModern} numberOfLines={2}>
+                  {item.observation || 'Sem observações'}
+                </ThemedText>
+
+                <ThemedText style={{ fontSize: 11, color: '#8E8E93', marginTop: 4 }}>
+                  Local: {item.latitude?.toFixed(5)}, {item.longitude?.toFixed(5)}
+                </ThemedText>
+
+                {item.userEmail && (
+                  <View style={styles.tagContainer}>
+                    <ThemedText style={styles.tagText}>
+                      Por: {item.userEmail}
+                    </ThemedText>
+                  </View>
+                )}
+              </View>
+            </ThemedView>
+          ))
+        )}
       </ThemedView>
-
-      {visitas.map((item) => (
-        <ThemedView
-          key={item.id?.toString() || Math.random().toString()}
-          style={styles.visitaCard}
-        >
-          {item.uriImagem && (
-            <Image
-              source={{ uri: item.uriImagem }}
-              style={styles.imagem}
-              resizeMode="cover"
-            />
-          )}
-
-          <ThemedText style={styles.textCard}>
-            Local: {item.localName}
-          </ThemedText>
-
-          {item.userEmail && (
-            <ThemedText style={styles.textCard}>
-              Registrado por: {item.userEmail}
-            </ThemedText>
-          )}
-
-          <ThemedText style={styles.textCard}>
-            Observação: {item.observation ? item.observation : 'Nenhuma'}
-          </ThemedText>
-
-          {item.latitude != null && item.longitude != null && (
-            <ThemedText style={styles.textCard}>
-              Coordenadas: {item.latitude.toFixed(5)}, {item.longitude.toFixed(5)}
-            </ThemedText>
-          )}
-
-          {item.date && (
-            <ThemedText style={styles.textCard}>
-              Registrado em: {formatarData(item.date)}
-            </ThemedText>
-          )}
-        </ThemedView>
-      ))}
-
-      <View style={{ height: 100 }} />
+      <ThemedView style={{ height: 100 }} />
     </ParallaxScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerContainer: {
-    height: 260,
+  container: {
+    padding: 20,
+    backgroundColor: '#121212',
   },
 
-  backButton: {
+  headerContent: {
+    height: 140,
+    justifyContent: 'center',
+    paddingTop: 30,
+    backgroundColor: '#0055FF',
+  },
+
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 36,
+    fontWeight: '900',
+    fontFamily: Fonts.rounded,
+    textAlign: 'center',
+  },
+
+  logoutButton: {
     position: 'absolute',
     top: 50,
-    left: 16,
-    zIndex: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    backgroundColor: '#007AFF',
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     borderRadius: 20,
   },
 
-  backButtonText: {
-    color: '#fff',
+  logoutText: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '600',
   },
 
-  headerImage: {
-    position: 'absolute',
-    bottom: -90,
-    left: -35,
-  },
-
-  greetingContainer: {
-    marginBottom: 12,
-  },
-
-  greetingText: {
-    fontSize: 18,
-    fontWeight: '600',
-    fontFamily: Fonts.rounded,
-  },
-
-  titleContainer: {
+  modernCard: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 20,
     marginBottom: 20,
-  },
-
-  visitaCard: {
-    padding: 15,
-    marginBottom: 15,
-    borderRadius: 10,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#333333',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
 
-  imagem: {
+  cardImageModern: {
     width: '100%',
-    height: 220,
-    borderRadius: 10,
-    marginBottom: 12,
+    height: 200,
   },
 
-  textCard: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
+  cardContentModern: {
+    padding: 16,
+  },
+
+  cardTitleModern: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
     fontFamily: Fonts.rounded,
+  },
+
+  cardDateModern: {
+    fontSize: 12,
+    color: '#0055FF',
+    fontWeight: '600',
+    marginTop: 4,
+  },
+
+  cardObsModern: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginTop: 8,
+    lineHeight: 20,
+  },
+
+  tagContainer: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#2C2C2E',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+
+  tagText: {
+    fontSize: 11,
+    color: '#8E8E93',
+    fontWeight: '600',
+  },
+
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 60,
+  },
+
+  emptyText: {
+    marginTop: 16,
+    color: '#C7C7CC',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
